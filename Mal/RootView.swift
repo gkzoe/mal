@@ -267,6 +267,7 @@ struct HomeView: View {
     let model: ChatModel
 
     @State private var focusIndex = 1
+    private let recurringIndex = 1
 
     private let chips = [
         "What can Mal do for me",
@@ -292,12 +293,21 @@ struct HomeView: View {
                     Button {
                         model.ask(chip + "?")
                     } label: {
-                        Text(chip)
-                            .font(.system(size: 18))
-                            .foregroundStyle(Theme.text)
-                            .padding(.vertical, 17)
-                            .padding(.horizontal, 30)
-                            .glassCapsule()
+                        HStack(spacing: 10) {
+                            // Recurring prompt: the recap is something you ask every month.
+                            if index == recurringIndex {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(Theme.lime)
+                            }
+                            Text(chip)
+                                .font(.system(size: 18))
+                                .foregroundStyle(Theme.text)
+                        }
+                        .padding(.vertical, 17)
+                        .padding(.leading, index == recurringIndex ? 22 : 30)
+                        .padding(.trailing, 30)
+                        .glassCapsule()
                     }
                     .buttonStyle(PressStyle())
                     .opacity(opacity(for: index))
