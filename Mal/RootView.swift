@@ -64,6 +64,12 @@ struct ChatScreen: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Composer(model: model, focused: $composerFocused)
+                    .background(alignment: .bottom) {
+                        BottomBarrier(visible: model.inChat)
+                            .frame(height: 78 + 72 + 40)
+                            .ignoresSafeArea(edges: .bottom)
+                            .allowsHitTesting(false)
+                    }
             }
             .background {
                 Backdrop(active: model.inChat, thinking: model.thinking)
@@ -108,6 +114,38 @@ struct TopBarrier: View {
     }
 }
 
+/// Progressive blur under the composer so the thread dissolves before the home indicator.
+struct BottomBarrier: View {
+    let visible: Bool
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .black, location: 0.5),
+                            .init(color: .black, location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+            LinearGradient(
+                stops: [
+                    .init(color: Theme.bg.opacity(0), location: 0),
+                    .init(color: Theme.bg.opacity(0.55), location: 0.55),
+                    .init(color: Theme.bg.opacity(0.85), location: 1)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+        }
+        .opacity(visible ? 1 : 0)
+        .animation(.easeInOut(duration: 0.6), value: visible)
+    }
+}
+
 // MARK: - Background
 
 struct Backdrop: View {
@@ -132,26 +170,6 @@ struct Backdrop: View {
             )
             .scaleEffect(x: 1.5, y: 1, anchor: .top)
             .animation(.easeInOut(duration: 1.2), value: glow)
-            GeometryReader { geo in
-                ZStack {
-                    Text("مال")
-                        .font(.system(size: 380, weight: .bold, design: .serif))
-                        .fixedSize()
-                        .rotationEffect(.degrees(-8))
-                        .position(x: geo.size.width + 20, y: 220)
-                    Text("مال")
-                        .font(.system(size: 340, weight: .bold, design: .serif))
-                        .fixedSize()
-                        .rotationEffect(.degrees(6))
-                        .position(x: 0, y: geo.size.height - 200)
-                }
-                .foregroundStyle(Color(hex: 0xDCF0D2).opacity(0.05))
-                .frame(width: geo.size.width, height: geo.size.height)
-                .clipped()
-                // Flatten to a single screen-sized texture once; no live blur.
-                .drawingGroup()
-            }
-            .allowsHitTesting(false)
         }
     }
 }
