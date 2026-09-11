@@ -196,9 +196,12 @@ final class ChatModel {
     private func finish(_ id: UUID, _ followUps: [FollowUp]) async {
         await pause(350)
         withAnimation(.spring(duration: 0.4)) {
-            update(id) {
-                $0.showActions = true
-                $0.followUps = followUps
+            update(id) { $0.showActions = true }
+        }
+        for followUp in followUps {
+            await pause(170)
+            withAnimation(.spring(duration: 0.35)) {
+                update(id) { $0.followUps.append(followUp) }
             }
         }
         busy = false

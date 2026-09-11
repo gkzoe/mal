@@ -287,6 +287,7 @@ struct FollowUpChips: View {
                     .glassCapsule()
                 }
                 .buttonStyle(PressStyle())
+                .transition(.opacity.combined(with: .offset(y: 8)))
             }
         }
         .padding(.top, 4)

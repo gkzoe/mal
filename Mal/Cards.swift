@@ -9,7 +9,7 @@ struct Eyebrow: View {
     var body: some View {
         Text(text)
             .font(.system(size: 13, weight: .semibold))
-            .tracking(1)
+            .tracking(0.4)
             .textCase(.uppercase)
             .foregroundStyle(Theme.text3)
     }
@@ -252,7 +252,7 @@ struct StatTile: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(label)
                 .font(.system(size: 12.5, weight: .semibold))
-                .tracking(0.8)
+                .tracking(0.3)
                 .textCase(.uppercase)
                 .foregroundStyle(Theme.text3)
             Text(value)

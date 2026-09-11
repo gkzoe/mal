@@ -25,7 +25,7 @@ struct TrendCard: View {
                 .padding(.top, 8)
 
             GeometryReader { geo in
-                let labelBlock: CGFloat = 44
+                let labelBlock: CGFloat = 58   // value above, month + note below
                 let barArea = geo.size.height - labelBlock
                 let scale = barArea / CGFloat(maxTotal)
                 let lineY = 22 + barArea - CGFloat(usual) * scale
@@ -34,17 +34,11 @@ struct TrendCard: View {
                         path.move(to: CGPoint(x: 0, y: lineY))
                         path.addLine(to: CGPoint(x: geo.size.width, y: lineY))
                     }
-                    .stroke(Theme.text2.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    Text("usual")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Theme.text2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(Theme.surface))
-                        .position(x: geo.size.width - 24, y: lineY)
+                    .stroke(Theme.text2.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                     HStack(alignment: .bottom, spacing: 10) {
                         ForEach(months) { month in
                             let isAugust = month.id == months.last?.id
+                            let isHighest = month.id == SpendData.highestMonth.id
                             VStack(spacing: 6) {
                                 Text(short(month.total))
                                     .font(.system(size: 11.5, weight: .medium))
@@ -56,6 +50,10 @@ struct TrendCard: View {
                                 Text(month.label)
                                     .font(.system(size: 12, weight: isAugust ? .semibold : .regular))
                                     .foregroundStyle(isAugust ? Theme.text : Theme.text3)
+                                Text(isAugust ? "Lowest" : (isHighest ? "Highest" : ""))
+                                    .font(.system(size: 10.5, weight: .medium))
+                                    .foregroundStyle(isAugust ? Theme.lime : Theme.text2)
+                                    .frame(height: 12)
                             }
                             .frame(maxWidth: .infinity)
                         }
@@ -63,18 +61,11 @@ struct TrendCard: View {
                     .frame(height: geo.size.height, alignment: .bottom)
                 }
             }
-            .frame(height: 190)
+            .frame(height: 200)
             .padding(.top, 22)
             .onAppear {
                 withAnimation(.spring(duration: 0.9)) { grown = true }
             }
-
-            HStack(spacing: 12) {
-                StatTile(label: "Lowest", value: "Aug", detail: aed(SpendData.total))
-                StatTile(label: "Highest", value: SpendData.highestMonth.label, detail: aed(SpendData.highestMonth.total))
-                StatTile(label: "Usual", value: aed(usual), detail: "5-month avg")
-            }
-            .padding(.top, 18)
         }
         .padding(20)
         .cardBackground(radius: 26)
