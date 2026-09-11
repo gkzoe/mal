@@ -50,26 +50,24 @@ struct ChatScreen: View {
                 }
             }
             .animation(.easeOut(duration: 0.35), value: model.inChat)
-            // The bar floats over the thread. Its background is the green blur
-            // barrier: it runs from the status bar down past the buttons and
-            // over the first ~70pt of chat so text dissolves into it.
+            // Barriers sit above the thread and below the bar and composer.
+            // Measured from the screen edges so there is never a gap.
+            .overlay {
+                VStack(spacing: 0) {
+                    TopBarrier(visible: model.inChat, thinking: model.thinking)
+                        .frame(height: statusTop + 64 + 44)
+                    Spacer(minLength: 0)
+                    BottomBarrier(visible: model.inChat)
+                        .frame(height: outer.safeAreaInsets.bottom + 78 + 40)
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            }
             .safeAreaInset(edge: .top, spacing: 0) {
                 TopBar(model: model, onBack: onBack)
-                    .background(alignment: .top) {
-                        TopBarrier(visible: model.inChat, thinking: model.thinking)
-                            .frame(height: statusTop + 64 + 72)
-                            .ignoresSafeArea(edges: .top)
-                            .allowsHitTesting(false)
-                    }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Composer(model: model, focused: $composerFocused)
-                    .background(alignment: .bottom) {
-                        BottomBarrier(visible: model.inChat)
-                            .frame(height: 78 + 72 + 40)
-                            .ignoresSafeArea(edges: .bottom)
-                            .allowsHitTesting(false)
-                    }
             }
             .background {
                 Backdrop(active: model.inChat, thinking: model.thinking)
@@ -80,41 +78,66 @@ struct ChatScreen: View {
     }
 }
 
-/// Bright green progressive blur that separates the top bar from the chat.
+/// Green progressive blur between the top bar and the chat. The glow drifts
+/// slowly so it reads as light rather than a flat overlay.
 struct TopBarrier: View {
     let visible: Bool
     let thinking: Bool
+    @State private var drift = false
 
     var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .mask(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .black, location: 0),
-                            .init(color: .black, location: 0.5),
-                            .init(color: .clear, location: 1)
-                        ],
-                        startPoint: .top, endPoint: .bottom
+        GeometryReader { geo in
+            ZStack {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black, location: 0.45),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .top, endPoint: .bottom
+                        )
                     )
+                // Base tint so the very top is always a little green.
+                LinearGradient(
+                    stops: [
+                        .init(color: Color(hex: 0x1E7A5A).opacity(0.3), location: 0),
+                        .init(color: Color(hex: 0x1E7A5A).opacity(0), location: 0.75)
+                    ],
+                    startPoint: .top, endPoint: .bottom
                 )
-            LinearGradient(
-                stops: [
-                    .init(color: Color(hex: 0x1E7A5A).opacity(thinking ? 0.95 : 0.85), location: 0),
-                    .init(color: Color(hex: 0x1B6B50).opacity(thinking ? 0.7 : 0.55), location: 0.45),
-                    .init(color: Color(hex: 0x156048).opacity(0), location: 1)
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
+                // Drifting pool of light.
+                RadialGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: Color(hex: 0x23885F).opacity(0.55), location: 0),
+                        .init(color: Color(hex: 0x1B6B50).opacity(0.22), location: 0.5),
+                        .init(color: .clear, location: 1)
+                    ]),
+                    center: UnitPoint(x: 0.5, y: 0.1),
+                    startRadius: 0,
+                    endRadius: geo.size.width * 0.7
+                )
+                .frame(width: geo.size.width * 1.6, height: geo.size.height * 1.5)
+                .offset(
+                    x: drift ? geo.size.width * 0.18 : -geo.size.width * 0.18,
+                    y: drift ? -geo.size.height * 0.1 : geo.size.height * 0.05
+                )
+                .scaleEffect(drift ? 1.08 : 0.94)
+                .opacity(thinking ? 1 : 0.75)
+                .animation(.easeInOut(duration: 7).repeatForever(autoreverses: true), value: drift)
+                .animation(.easeInOut(duration: 0.8), value: thinking)
+            }
+            .clipped()
         }
         .opacity(visible ? 1 : 0)
         .animation(.easeInOut(duration: 0.6), value: visible)
-        .animation(.easeInOut(duration: 0.8), value: thinking)
+        .onAppear { drift = true }
     }
 }
 
-/// Progressive blur under the composer so the thread dissolves before the home indicator.
+/// Progressive blur under the composer, tinted to the page background.
 struct BottomBarrier: View {
     let visible: Bool
 
@@ -126,7 +149,7 @@ struct BottomBarrier: View {
                     LinearGradient(
                         stops: [
                             .init(color: .clear, location: 0),
-                            .init(color: .black, location: 0.5),
+                            .init(color: .black, location: 0.55),
                             .init(color: .black, location: 1)
                         ],
                         startPoint: .top, endPoint: .bottom
@@ -135,8 +158,8 @@ struct BottomBarrier: View {
             LinearGradient(
                 stops: [
                     .init(color: Theme.bg.opacity(0), location: 0),
-                    .init(color: Theme.bg.opacity(0.55), location: 0.55),
-                    .init(color: Theme.bg.opacity(0.85), location: 1)
+                    .init(color: Theme.bg.opacity(0.7), location: 0.5),
+                    .init(color: Theme.bg.opacity(0.96), location: 1)
                 ],
                 startPoint: .top, endPoint: .bottom
             )
