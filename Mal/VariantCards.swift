@@ -198,7 +198,6 @@ struct MerchantsCard: View {
     private var visible: [MerchantTotal] { showAll ? merchants : Array(merchants.prefix(5)) }
 
     var body: some View {
-        let topTotal = merchants.first?.total ?? 1
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Eyebrow("August spending")
@@ -237,17 +236,13 @@ struct MerchantsCard: View {
                                 ForEach(merchant.categoryIDs, id: \.self) { CategoryTag(categoryID: $0) }
                                 Spacer(minLength: 0)
                             }
-                            MerchantBar(
-                                fraction: Double(merchant.total) / Double(topTotal),
-                                color: Theme.ramp[SpendData.category(merchant.categoryIDs[0]).colorIndex]
-                            )
                         }
                         Image(systemName: "chevron.right")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Theme.text3)
                             .padding(.top, 4)
                     }
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 13)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(PressStyle())
