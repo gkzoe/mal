@@ -200,11 +200,13 @@ final class ChatModel {
         withAnimation(.spring(duration: 0.4)) {
             update(id) { $0.showActions = true }
         }
+        // Let the answer land before offering next steps, then trickle them in.
+        await pause(900)
         for followUp in followUps {
-            await pause(170)
-            withAnimation(.spring(duration: 0.35)) {
+            withAnimation(.spring(duration: 0.4)) {
                 update(id) { $0.followUps.append(followUp) }
             }
+            await pause(420)
         }
         busy = false
     }
