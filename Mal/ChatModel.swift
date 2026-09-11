@@ -96,8 +96,10 @@ final class ChatModel {
     }
 
     func toggleReasoning(_ id: UUID) {
+        // Mutates in place without bumping `revision`, so the thread does not scroll.
+        guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
         withAnimation(.snappy(duration: 0.35)) {
-            update(id) { $0.reasoning?.expanded.toggle() }
+            messages[index].reasoning?.expanded.toggle()
         }
     }
 
