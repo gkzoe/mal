@@ -25,7 +25,7 @@ struct TrendCard: View {
                 .padding(.top, 8)
 
             GeometryReader { geo in
-                let labelBlock: CGFloat = 58   // value above, month + note below
+                let labelBlock: CGFloat = 44   // value above, month below
                 let barArea = geo.size.height - labelBlock
                 let scale = barArea / CGFloat(maxTotal)
                 let lineY = 22 + barArea - CGFloat(usual) * scale
@@ -38,7 +38,6 @@ struct TrendCard: View {
                     HStack(alignment: .bottom, spacing: 10) {
                         ForEach(months) { month in
                             let isAugust = month.id == months.last?.id
-                            let isHighest = month.id == SpendData.highestMonth.id
                             VStack(spacing: 6) {
                                 Text(short(month.total))
                                     .font(.system(size: 11.5, weight: .medium))
@@ -50,10 +49,6 @@ struct TrendCard: View {
                                 Text(month.label)
                                     .font(.system(size: 12, weight: isAugust ? .semibold : .regular))
                                     .foregroundStyle(isAugust ? Theme.text : Theme.text3)
-                                Text(isAugust ? "Lowest" : (isHighest ? "Highest" : ""))
-                                    .font(.system(size: 10.5, weight: .medium))
-                                    .foregroundStyle(isAugust ? Theme.lime : Theme.text2)
-                                    .frame(height: 12)
                             }
                             .frame(maxWidth: .infinity)
                         }
@@ -61,7 +56,7 @@ struct TrendCard: View {
                     .frame(height: geo.size.height, alignment: .bottom)
                 }
             }
-            .frame(height: 200)
+            .frame(height: 190)
             .padding(.top, 22)
             .onAppear {
                 withAnimation(.spring(duration: 0.9)) { grown = true }
@@ -206,13 +201,17 @@ struct MerchantsCard: View {
         let topTotal = merchants.first?.total ?? 1
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Eyebrow("Top merchants · August")
+                Eyebrow("August spending")
                 Spacer()
-                Text("\(merchants.count) merchants")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.text3)
+                DeltaPill(now: SpendData.total, prev: SpendData.prevTotal)
             }
-            .padding(.bottom, 6)
+            BigAmount(SpendData.total)
+                .padding(.top, 10)
+            Text("\(merchants.count) merchants · \(SpendData.paymentCount) payments · transfers excluded")
+                .font(.system(size: 15))
+                .foregroundStyle(Theme.text2)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
             ForEach(Array(visible.enumerated()), id: \.element.id) { index, merchant in
                 Divider().overlay(Theme.line)
                 Button { onTap(merchant) } label: {
