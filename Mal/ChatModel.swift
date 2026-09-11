@@ -487,9 +487,9 @@ final class ChatModel {
         let id = await begin("Send this every month")
         await reason(id, title: "Setting up your recap", steps: ["Saving a monthly reminder"])
         await stream(id, [
-            TextSegment("Done. I will send your spending recap on the "),
-            TextSegment("1st of every month", bold: true),
-            TextSegment(" at 9am. Your next one covers September and arrives on Thursday 1 October.")
+            TextSegment("Done. You'll get a "),
+            TextSegment("push notification on the 1st of every month", bold: true),
+            TextSegment(" at 9am with your recap. The next one covers September and arrives on Thursday 1 October.")
         ])
         await showCard(id, .monthlyConfirm)
         await finish(id, [

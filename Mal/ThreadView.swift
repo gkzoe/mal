@@ -107,7 +107,12 @@ struct MessageView: View {
         case .topPurchases:
             TopPurchasesCard()
         case .monthlyConfirm:
-            ConfirmCard(title: "Monthly recap is on", subtitle: "Next: Thu 1 Oct, 9:00am · Change anytime in Settings")
+            ConfirmCard(
+                icon: "bell.badge",
+                title: "Monthly recap is on",
+                subtitle: "You'll get a push notification on the 1st of every month. Next one: Thu 1 Oct, 9:00am.",
+                linkTitle: "Change anytime in Settings"
+            )
         case .roundUpCTA:
             CTAButton(title: "Turn on Round-Up") { model.turnOnRoundUp(message.id) }
         case .roundUpConfirm:

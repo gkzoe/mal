@@ -391,23 +391,37 @@ struct CTAButton: View {
 }
 
 struct ConfirmCard: View {
+    var icon = "checkmark"
     let title: String
     let subtitle: String
+    var linkTitle: String? = nil
 
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "checkmark")
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon)
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Theme.green)
                 .frame(width: 34, height: 34)
                 .background(Circle().fill(Theme.green.opacity(0.15)))
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 16.5, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 Text(subtitle)
                     .font(.system(size: 14.5))
                     .foregroundStyle(Theme.text2)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let linkTitle {
+                    Button { } label: {
+                        Text(linkTitle)
+                            .font(.system(size: 14.5, weight: .semibold))
+                            .foregroundStyle(Theme.lime)
+                            .underline(true, color: Theme.lime.opacity(0.5))
+                    }
+                    .buttonStyle(PressStyle())
+                    .padding(.top, 4)
+                }
             }
         }
         .padding(.horizontal, 18)
