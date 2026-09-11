@@ -4,22 +4,35 @@ struct ThreadView: View {
     let model: ChatModel
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    ForEach(model.messages) { message in
-                        MessageView(message: message, model: model)
+        GeometryReader { geo in
+            // Status bar plus the floating top bar. Content starts below it but
+            // scrolls up underneath, fading out as it passes the buttons.
+            let barBottom = geo.safeAreaInsets.top
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 22) {
+                        ForEach(model.messages) { message in
+                            MessageView(message: message, model: model)
+                        }
+                        Color.clear.frame(height: 1).id("bottom")
                     }
-                    Color.clear.frame(height: 1).id("bottom")
+                    .padding(.horizontal, 20)
+                    .padding(.top, barBottom + 16)
+                    .padding(.bottom, 12)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 40)
-                .padding(.bottom, 12)
-            }
-            .scrollIndicators(.hidden)
-            .onChange(of: model.revision) { _, _ in
-                withAnimation(.easeOut(duration: 0.3)) {
-                    proxy.scrollTo("bottom", anchor: .bottom)
+                .scrollIndicators(.hidden)
+                .ignoresSafeArea(edges: .top)
+                .mask(
+                    VStack(spacing: 0) {
+                        LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                            .frame(height: barBottom + 24)
+                        Color.black
+                    }
+                )
+                .onChange(of: model.revision) { _, _ in
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                    }
                 }
             }
         }

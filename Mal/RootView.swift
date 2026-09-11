@@ -42,18 +42,19 @@ struct ChatScreen: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            TopBar(model: model, onBack: onBack)
-            ZStack {
-                if model.inChat {
-                    ThreadView(model: model)
-                        .transition(.opacity)
-                } else {
-                    HomeView(model: model)
-                        .transition(.opacity.combined(with: .offset(y: -12)))
-                }
+        ZStack {
+            if model.inChat {
+                ThreadView(model: model)
+                    .transition(.opacity)
+            } else {
+                HomeView(model: model)
+                    .transition(.opacity.combined(with: .offset(y: -12)))
             }
-            .animation(.easeOut(duration: 0.35), value: model.inChat)
+        }
+        .animation(.easeOut(duration: 0.35), value: model.inChat)
+        // The bar floats over the thread; content scrolls underneath and fades out.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TopBar(model: model, onBack: onBack)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Composer(model: model, focused: $composerFocused)
@@ -134,6 +135,7 @@ struct TopBar: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
+        .padding(.bottom, 8)
         .animation(.spring(duration: 0.4), value: model.inChat)
     }
 }
