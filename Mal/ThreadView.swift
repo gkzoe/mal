@@ -4,29 +4,14 @@ struct ThreadView: View {
     let model: ChatModel
 
     var body: some View {
-        if #available(iOS 26.0, *) {
-            // System progressive blur under the floating top bar.
+        GeometryReader { geo in
+            // Status bar plus the floating top bar. Content starts below it and
+            // scrolls up underneath the barrier.
+            let barBottom = geo.safeAreaInsets.top
             ScrollViewReader { proxy in
-                thread(topPadding: 12)
-                    .scrollEdgeEffectStyle(.soft, for: .top)
+                thread(topPadding: barBottom + 16)
+                    .ignoresSafeArea(edges: .top)
                     .onChange(of: model.revision) { _, _ in scrollToBottom(proxy) }
-            }
-        } else {
-            // Older iOS: extend under the bar by hand and fade the content out.
-            GeometryReader { geo in
-                let barBottom = geo.safeAreaInsets.top
-                ScrollViewReader { proxy in
-                    thread(topPadding: barBottom + 16)
-                        .ignoresSafeArea(edges: .top)
-                        .mask(
-                            VStack(spacing: 0) {
-                                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                                    .frame(height: barBottom + 24)
-                                Color.black
-                            }
-                        )
-                        .onChange(of: model.revision) { _, _ in scrollToBottom(proxy) }
-                }
             }
         }
     }
