@@ -266,12 +266,12 @@ struct CircleButton: View {
 struct HomeView: View {
     let model: ChatModel
 
-    @State private var focusIndex = 1
-    private let recurringIndex = 1
+    @State private var focusIndex = 0
+    private let recurringIndex = 0
 
     private let chips = [
-        "What can Mal do for me",
         "How was my spending last month",
+        "What can Mal do for me",
         "What are the fees",
         "Which countries are supported",
         "How do I open an account"
@@ -281,13 +281,13 @@ struct HomeView: View {
         VStack(spacing: 0) {
             Spacer()
             Text("Salam, Zoe")
-                .font(.system(size: 46, weight: .bold))
-                .tracking(-1.2)
+                .font(.system(size: 36, weight: .bold))
+                .tracking(-0.9)
                 .foregroundStyle(Theme.lime)
             Text("How can I help you today?")
-                .font(.system(size: 21))
+                .font(.system(size: 17))
                 .foregroundStyle(Theme.text2)
-                .padding(.top, 14)
+                .padding(.top, 10)
             VStack(spacing: 10) {
                 ForEach(Array(chips.enumerated()), id: \.offset) { index, chip in
                     Button {
@@ -313,7 +313,7 @@ struct HomeView: View {
                     .opacity(opacity(for: index))
                 }
             }
-            .padding(.top, 70)
+            .padding(.top, 56)
             Spacer()
             Spacer()
         }
