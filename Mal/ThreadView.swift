@@ -102,6 +102,8 @@ struct MessageView: View {
             MerchantsCard { model.tapMerchant($0) }
         case .merchant(let name):
             MerchantDetailCard(merchant: SpendData.merchant(name))
+        case .rail:
+            WidgetRail(onCategory: { model.tapCategory($0) }, onMerchant: { model.tapMerchant($0) })
         case .topPurchases:
             TopPurchasesCard()
         case .monthlyConfirm:

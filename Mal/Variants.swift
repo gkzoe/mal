@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The three ways the assistant can answer "How was my spending last month?"
 enum Variant: String, CaseIterable, Identifiable {
-    case categories, trend, merchants
+    case categories, trend, merchants, combined
 
     var id: String { rawValue }
 
@@ -11,6 +11,7 @@ enum Variant: String, CaseIterable, Identifiable {
         case .categories: return "01"
         case .trend: return "02"
         case .merchants: return "03"
+        case .combined: return "04"
         }
     }
 
@@ -19,6 +20,7 @@ enum Variant: String, CaseIterable, Identifiable {
         case .categories: return "Categories vs last month"
         case .trend: return "Six-month trend"
         case .merchants: return "Where the money went"
+        case .combined: return "All three, side by side"
         }
     }
 
@@ -27,6 +29,7 @@ enum Variant: String, CaseIterable, Identifiable {
         case .categories: return "August against July, category by category. Where did the change come from?"
         case .trend: return "August against the past five months. Is this a high or a low month for me?"
         case .merchants: return "Merchants ranked by spend, tagged with every category each one touches."
+        case .combined: return "One answer, three lenses in a swipeable rail: categories, six months, merchants."
         }
     }
 }
@@ -45,7 +48,7 @@ struct VariationMenu: View {
                     .font(.system(size: 34, weight: .bold))
                     .tracking(-0.8)
                     .foregroundStyle(Theme.text)
-                Text("Three ways to answer “How was my spending last month?” Pick one to open the chat. The back arrow brings you back here.")
+                Text("Four ways to answer “How was my spending last month?” Pick one to open the chat. The back arrow brings you back here.")
                     .font(.system(size: 16))
                     .foregroundStyle(Theme.text2)
                     .lineSpacing(3)
@@ -134,6 +137,14 @@ struct VariantGlyph: View {
                     RoundedRectangle(cornerRadius: 1.5)
                         .fill(index == SpendData.months.count - 1 ? Theme.lime : Color(hex: 0x2F7F77).opacity(0.8))
                         .frame(width: 4, height: CGFloat(month.total) / 10240 * 30)
+                }
+            }
+        case .combined:
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(Color.white.opacity(i == 0 ? 0.35 : 0.14))
+                        .frame(width: i == 0 ? 20 : 10, height: 30)
                 }
             }
         case .merchants:

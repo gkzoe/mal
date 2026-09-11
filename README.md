@@ -10,7 +10,7 @@ Two builds of the same flow live here:
 | `Mal.xcodeproj` + `Mal/` | Native SwiftUI iOS app (iOS 17+). Open in Xcode, run on your iPhone. |
 | `index.html` | Web version. Open in a browser, or add to the iPhone home screen from Safari. |
 
-The iOS app opens on a picker with three variations of the same answer. The back
+The iOS app opens on a picker with four variations of the same answer. The back
 arrow in the chat returns to the picker.
 
 1. **Categories vs last month**: August against July, category by category, with
@@ -19,6 +19,8 @@ arrow in the chat returns to the picker.
    with "Why was August lower?" and "What happened in May?" follow-ups.
 3. **Where the money went**: merchants ranked by spend and tagged with every
    category they touch (Careem spans transport, groceries and dining).
+4. **All three, side by side**: one answer with the three widgets in a
+   swipeable rail.
 
 All variations share the "My biggest purchase" follow-up (top three purchases
 with share of the month) and the monthly recap opt-in. Controls use Liquid Glass

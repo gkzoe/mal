@@ -395,3 +395,54 @@ struct TopPurchasesCard: View {
         .cardBackground(radius: 26)
     }
 }
+
+// MARK: - Variation 4: rail of all three widgets
+
+struct WidgetRail: View {
+    let onCategory: (SpendCategory) -> Void
+    let onMerchant: (MerchantTotal) -> Void
+    @State private var page: Int? = 0
+
+    private let labels = ["By category", "Six months", "By merchant"]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ScrollView(.horizontal) {
+                HStack(alignment: .top, spacing: 12) {
+                    railItem(0) { InsightCard { onCategory($0) } }
+                    railItem(1) { TrendCard() }
+                    railItem(2) { MerchantsCard { onMerchant($0) } }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $page)
+            .scrollIndicators(.hidden)
+            .contentMargins(.horizontal, 20, for: .scrollContent)
+            .padding(.horizontal, -20)   // bleed to the screen edges
+
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { i in
+                    Capsule()
+                        .fill(i == (page ?? 0) ? Theme.lime : Color.white.opacity(0.18))
+                        .frame(width: i == (page ?? 0) ? 18 : 6, height: 6)
+                        .animation(.snappy(duration: 0.3), value: page)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func railItem<Content: View>(_ index: Int, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(labels[index])
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(index == (page ?? 0) ? Theme.lime : Theme.text3)
+                .padding(.leading, 4)
+                .animation(.easeInOut(duration: 0.25), value: page)
+            content()
+        }
+        .containerRelativeFrame(.horizontal) { width, _ in width - 56 }
+        .id(index)
+    }
+}

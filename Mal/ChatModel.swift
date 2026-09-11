@@ -228,7 +228,35 @@ final class ChatModel {
         case .categories: await overviewCategories(text)
         case .trend: await overviewTrend(text)
         case .merchants: await overviewMerchants(text)
+        case .combined: await overviewCombined(text)
         }
+    }
+
+    /// Variation 4: the three widgets in one swipeable rail.
+    private func overviewCombined(_ text: String) async {
+        let id = await begin(text)
+        await reason(id, title: "Looking into your spending", steps: [
+            "Reading transactions since March",
+            "Grouping \(SpendData.paymentCount) August payments by category and merchant",
+            "Comparing August with July and your usual month"
+        ])
+        let usual = SpendData.averageOfPreviousMonths
+        let gap = usual - SpendData.total
+        await stream(id, [
+            TextSegment("You spent "),
+            TextSegment(aed(SpendData.total), bold: true),
+            TextSegment(" in August, "),
+            TextSegment("\(abs(SpendData.deltaPercent))% less than July", bold: true),
+            TextSegment(" and \(aed(gap)) under your usual month. Dining and transfers dropped the most, and Careem was your biggest merchant once rides, groceries and food are added up. Swipe for each view.")
+        ])
+        await showCard(id, .rail)
+        await finish(id, [
+            FollowUp(label: "Why did shopping go up?", action: .drill("shopping")),
+            FollowUp(label: "Why was August lower?", action: .whyLower),
+            FollowUp(label: "Show me Careem", action: .merchant("Careem")),
+            biggestFollowUp,
+            monthlyFollowUp
+        ])
     }
 
     /// Variation 1: August against July, by category.
@@ -442,6 +470,7 @@ final class ChatModel {
         case .categories: contextual = FollowUp(label: "Show me shopping", action: .drill("shopping"))
         case .trend: contextual = FollowUp(label: "Why was August lower?", action: .whyLower)
         case .merchants: contextual = FollowUp(label: "Show me \(top[0].merchant)", action: .merchant(top[0].merchant))
+        case .combined: contextual = FollowUp(label: "Show me shopping", action: .drill("shopping"))
         }
         await finish(id, [contextual, monthlyFollowUp])
     }

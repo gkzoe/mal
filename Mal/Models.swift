@@ -287,6 +287,7 @@ enum CardKind {
     case monthDetail        // v2: what happened in May
     case merchants          // v3: ranked merchants
     case merchant(String)   // v3: one merchant
+    case rail               // v4: all three widgets side by side
     case topPurchases       // shared: largest purchases
     case monthlyConfirm
     case roundUpCTA
