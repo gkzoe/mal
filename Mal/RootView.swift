@@ -288,7 +288,7 @@ struct HomeView: View {
                 .font(.system(size: 21))
                 .foregroundStyle(Theme.text2)
                 .padding(.top, 14)
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 ForEach(Array(chips.enumerated()), id: \.offset) { index, chip in
                     Button {
                         model.ask(chip + "?")
@@ -297,16 +297,16 @@ struct HomeView: View {
                             // Recurring prompt: the recap is something you ask every month.
                             if index == recurringIndex {
                                 Image(systemName: "clock.arrow.circlepath")
-                                    .font(.system(size: 16, weight: .medium))
+                                    .font(.system(size: 14, weight: .medium))
                                     .foregroundStyle(Theme.lime)
                             }
                             Text(chip)
-                                .font(.system(size: 18))
+                                .font(.system(size: 15.5))
                                 .foregroundStyle(Theme.text)
                         }
-                        .padding(.vertical, 17)
-                        .padding(.leading, index == recurringIndex ? 22 : 30)
-                        .padding(.trailing, 30)
+                        .padding(.vertical, 14)
+                        .padding(.leading, index == recurringIndex ? 18 : 24)
+                        .padding(.trailing, 24)
                         .glassCapsule()
                     }
                     .buttonStyle(PressStyle())
