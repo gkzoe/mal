@@ -1,0 +1,621 @@
+<title>Mal Spending Recap</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Aref+Ruqaa:wght@700&display=swap">
+<style>
+  :root {
+    --bg: #070a0b;
+    --bg-2: #0d1214;
+    --bezel: #000;
+    --stage: #101314;
+    --surface: #15191b;
+    --surface-2: #1c1f21;
+    --surface-3: #232729;
+    --line: rgba(255,255,255,.07);
+    --text: #f1f4f2;
+    --text-2: #aab2ae;
+    --text-3: #6f7876;
+    --lime: #e6f5a3;
+    --green: #4ccf8a;
+    --amber: #f0b46a;
+    --glow: rgba(18, 92, 72, .62);
+    --glow-idle: rgba(14, 60, 50, .28);
+    --c1: #d8f0a8; --c2: #9fd98f; --c3: #63bf85; --c4: #3aa080; --c5: #2f7f77; --c6: #345f66; --c7: #3f4a55;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+    --ease: cubic-bezier(.2,.7,.2,1);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--stage); color: var(--text); font-family: var(--font);
+    -webkit-font-smoothing: antialiased; overflow: hidden;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+  /* ---------- stage + phone ---------- */
+  .stage { height: 100dvh; display: flex; align-items: center; justify-content: center; gap: 40px; padding: 24px 16px; }
+  .phone {
+    position: relative; width: 390px; height: 844px; max-height: 100%; border-radius: 54px; background: var(--bg);
+    box-shadow: 0 0 0 10px var(--bezel), 0 0 0 11px #2a2d2f, 0 40px 80px rgba(0,0,0,.6); overflow: hidden;
+    display: flex; flex-direction: column; isolation: isolate;
+  }
+  .phone::before { /* ambient glow */
+    content: ""; position: absolute; inset: -20% -30% auto -30%; height: 60%; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 0%, var(--glow-idle) 0%, transparent 65%);
+    transition: opacity 1.2s var(--ease); opacity: 1;
+  }
+  .phone::after {
+    content: ""; position: absolute; inset: -20% -30% auto -30%; height: 60%; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 0%, var(--glow) 0%, transparent 65%);
+    transition: opacity 1.2s var(--ease); opacity: 0;
+  }
+  .phone.thinking::after, .phone.chatting::after { opacity: 1; }
+  .phone.chatting::after { opacity: .7; }
+  .calligraphy {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    font-family: "Aref Ruqaa", serif; font-weight: 700; color: rgba(220, 240, 210, .045);
+    font-size: 520px; line-height: 1; letter-spacing: -.02em; direction: rtl; user-select: none;
+    filter: blur(1.5px);
+  }
+  .calligraphy span { position: absolute; }
+  .calligraphy .a { right: -70px; top: 20px; transform: rotate(-8deg); }
+  .calligraphy .b { left: -140px; bottom: 60px; font-size: 460px; transform: rotate(6deg); color: rgba(220, 240, 210, .035); }
+
+  .statusbar {
+    position: relative; z-index: 3; height: 54px; display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 34px 6px 38px; font-size: 17px; font-weight: 600; letter-spacing: -.2px;
+  }
+  .statusbar .right { display: flex; align-items: center; gap: 7px; }
+  .statusbar svg { display: block; }
+  .battery { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 15px; border-radius: 4px; background: #fff; color: #000; font-size: 11px; font-weight: 700; }
+
+  .topbar { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: center; padding: 8px 20px 0; }
+  .icon-btn {
+    width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.07);
+    display: grid; place-items: center; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    transition: transform .25s var(--ease), background .25s;
+  }
+  .icon-btn:active { transform: scale(.92); background: rgba(255,255,255,.12); }
+  .topbar .group { display: flex; gap: 10px; }
+  #newChat { opacity: 0; transform: translateX(8px) scale(.9); pointer-events: none; transition: all .4s var(--ease); }
+  .chatting #newChat { opacity: 1; transform: none; pointer-events: auto; }
+
+  /* ---------- scroll area ---------- */
+  .scroll { position: relative; z-index: 2; flex: 1; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; scrollbar-width: none; padding: 0 20px; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .scroll-fade { position: absolute; z-index: 3; left: 0; right: 0; top: 108px; height: 56px; pointer-events: none;
+    background: linear-gradient(var(--bg), transparent); mask: linear-gradient(#000, transparent); opacity: 0; transition: opacity .4s; }
+  .chatting .scroll-fade { opacity: .9; }
+
+  /* home */
+  .home { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-bottom: 140px; transition: opacity .35s var(--ease), transform .35s var(--ease); }
+  .home.leaving { opacity: 0; transform: translateY(-12px); }
+  .greeting { margin: 0; font-size: 46px; font-weight: 700; letter-spacing: -1.2px; color: var(--lime); text-wrap: balance; }
+  .sub { margin: 14px 0 0; font-size: 21px; color: var(--text-2); }
+  .chips { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 70px; }
+  .chip {
+    padding: 17px 30px; border-radius: 999px; background: var(--surface-2); font-size: 18px; letter-spacing: -.2px;
+    color: var(--text); white-space: nowrap; transition: opacity .8s var(--ease), transform .8s var(--ease), background .25s;
+  }
+  .chip:active { background: var(--surface-3); transform: scale(.97); }
+  .chip[data-d="1"] { opacity: .55; }
+  .chip[data-d="2"] { opacity: .22; }
+  .chip[data-d="3"] { opacity: .1; }
+
+  /* thread */
+  .thread { display: flex; flex-direction: column; gap: 22px; padding: 56px 0 40px; }
+  .turn { display: flex; flex-direction: column; gap: 16px; animation: rise .45s var(--ease) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  .user { align-self: flex-end; max-width: 80%; background: #1e2224; border-radius: 26px; padding: 15px 22px; font-size: 18px; line-height: 1.35; letter-spacing: -.2px; }
+  .ai { font-size: 18.5px; line-height: 1.42; letter-spacing: -.2px; color: #eef1ef; }
+  .ai .w { display: inline-block; opacity: 0; animation: word .35s var(--ease) forwards; }
+  @keyframes word { to { opacity: 1; } }
+  .ai b { font-weight: 600; color: #fff; }
+  .actions { display: flex; gap: 26px; color: #d7dbd9; padding-left: 2px; }
+  .actions button { display: grid; place-items: center; width: 26px; height: 26px; transition: transform .2s var(--ease), color .2s; }
+  .actions button:active { transform: scale(.85); }
+  .actions button.on { color: var(--green); }
+
+  /* reasoning card */
+  .reason { background: var(--surface); border-radius: 22px; overflow: hidden; border: 1px solid rgba(255,255,255,.04); }
+  .reason-head { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 17px 22px; font-size: 17.5px; color: #c9d0cd; text-align: left; }
+  .reason-head .l { display: flex; align-items: center; gap: 14px; }
+  .reason-head .title { font-size: 20px; color: #e8ebea; font-weight: 500; }
+  .reason-head .meta { display: flex; align-items: center; gap: 10px; color: #b3bab7; font-size: 17px; }
+  .reason-head .chev { transition: transform .35s var(--ease); color: #aab1ae; }
+  .reason.open .reason-head .chev { transform: rotate(180deg); }
+  .reason-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s var(--ease); }
+  .reason.open .reason-body { grid-template-rows: 1fr; }
+  .reason-body > div { overflow: hidden; }
+  .steps { list-style: none; margin: 0; padding: 4px 22px 18px; border-top: 1px solid var(--line); }
+  .steps li { display: flex; align-items: center; gap: 16px; padding: 12px 0; font-size: 18px; color: #d8ddda; animation: rise .35s var(--ease) both; }
+  .steps li .ico { width: 24px; height: 24px; display: grid; place-items: center; color: var(--green); }
+  .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2.2px dotted #cfd5d2; animation: spin 1.4s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .check { animation: pop .35s var(--ease) both; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } }
+
+  /* insight card */
+  .card { background: var(--surface); border: 1px solid rgba(255,255,255,.05); border-radius: 26px; padding: 20px 20px 8px; animation: rise .5s var(--ease) both; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .delta { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; padding: 5px 11px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+  .delta.down { color: var(--green); background: rgba(76,207,138,.12); }
+  .delta.up { color: var(--amber); background: rgba(240,180,106,.12); }
+  .delta.flat { color: var(--text-2); background: rgba(255,255,255,.07); }
+  .big { margin: 10px 0 0; font-size: 38px; font-weight: 700; letter-spacing: -1.4px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .big small { font-size: 18px; font-weight: 500; color: var(--text-2); letter-spacing: 0; margin-right: 6px; vertical-align: 6px; }
+  .big-sub { margin: 8px 0 0; font-size: 15px; color: var(--text-2); }
+  .stack { display: flex; gap: 3px; height: 14px; margin: 18px 0 6px; border-radius: 8px; overflow: hidden; }
+  .stack span { display: block; height: 100%; border-radius: 3px; transform-origin: left; animation: grow .8s var(--ease) both; transition: opacity .25s; }
+  .stack span:first-child { border-radius: 8px 3px 3px 8px; } .stack span:last-child { border-radius: 3px 8px 8px 3px; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .stack.dim span { opacity: .3; } .stack.dim span.lit { opacity: 1; }
+  .rows { list-style: none; margin: 8px 0 0; padding: 0; }
+  .row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 4px; border-top: 1px solid var(--line); font-size: 17px; text-align: left; transition: background .2s; border-radius: 10px; }
+  .row:active { background: rgba(255,255,255,.04); }
+  .row .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .row .name { flex: 1; color: #e6eae8; }
+  .row .amt { font-variant-numeric: tabular-nums; font-weight: 500; color: #f4f6f5; }
+  .row .d { width: 58px; text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .row .d.down { color: var(--green); } .row .d.up { color: var(--amber); } .row .d.flat { color: var(--text-3); }
+  .row .go { color: var(--text-3); }
+  .more { width: 100%; text-align: center; padding: 14px 0 12px; font-size: 16px; color: var(--text-2); border-top: 1px solid var(--line); }
+  .more:active { color: var(--text); }
+  .rows .hidden { display: none; }
+
+  /* drill-down */
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+  .kv div { background: rgba(255,255,255,.04); border-radius: 16px; padding: 14px 14px 12px; }
+  .kv .k { font-size: 12.5px; color: var(--text-3); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+  .kv .v { margin-top: 6px; font-size: 17px; font-weight: 600; letter-spacing: -.2px; }
+  .kv .v2 { margin-top: 2px; font-size: 14px; color: var(--text-2); }
+  .bars { list-style: none; margin: 18px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .bars li { display: grid; grid-template-columns: 1fr auto; row-gap: 7px; font-size: 15.5px; }
+  .bars .n { color: #e3e7e5; } .bars .a { font-variant-numeric: tabular-nums; color: var(--text-2); }
+  .bars .track { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.06); overflow: hidden; }
+  .bars .fill { height: 100%; border-radius: 3px; background: var(--c2); transform-origin: left; animation: grow .8s var(--ease) both; }
+  .note { margin: 6px 0 12px; font-size: 15.5px; color: var(--text-2); line-height: 1.4; }
+
+  /* round-up aside */
+  .aside { display: flex; gap: 14px; padding: 16px 18px 14px; border-radius: 22px; background: linear-gradient(135deg, rgba(230,245,163,.07), rgba(76,207,138,.05)); border: 1px solid rgba(230,245,163,.12); animation: rise .5s var(--ease) both; }
+  .aside .coin { flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(230,245,163,.14); display: grid; place-items: center; color: var(--lime); }
+  .aside p { margin: 2px 0 0; font-size: 16px; line-height: 1.42; color: #dfe4e1; }
+  .aside p b { color: #fff; font-weight: 600; }
+  .aside .links { display: flex; gap: 20px; margin-top: 12px; font-size: 15.5px; font-weight: 600; }
+  .aside .links .primary { color: var(--lime); }
+  .aside .links .quiet { color: var(--text-3); font-weight: 500; }
+  .aside.gone { animation: fade .35s var(--ease) forwards; }
+  @keyframes fade { to { opacity: 0; transform: scale(.98); height: 0; padding: 0; margin: 0; } }
+
+  .cta { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 10px; padding: 15px 22px; border-radius: 999px; background: var(--lime); color: #0b1409; font-weight: 600; font-size: 16.5px; transition: transform .2s var(--ease); }
+  .cta:active { transform: scale(.96); }
+  .confirm { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 20px; background: var(--surface); border: 1px solid rgba(255,255,255,.05); }
+  .confirm .ok { width: 34px; height: 34px; border-radius: 50%; background: rgba(76,207,138,.15); color: var(--green); display: grid; place-items: center; flex: none; }
+  .confirm .t { font-size: 16.5px; font-weight: 600; } .confirm .s { font-size: 14.5px; color: var(--text-2); margin-top: 2px; }
+  .receipt { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 20px; background: var(--surface); border: 1px solid rgba(255,255,255,.05); }
+  .receipt .logo { width: 44px; height: 44px; border-radius: 14px; background: #f6e04a; color: #1a1a1a; display: grid; place-items: center; font-weight: 800; font-size: 18px; letter-spacing: -.5px; }
+  .receipt .m { flex: 1; } .receipt .m .t { font-size: 17px; font-weight: 600; } .receipt .m .s { font-size: 14.5px; color: var(--text-2); margin-top: 2px; }
+  .receipt .p { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+
+  /* follow-up chips */
+  .follow { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 2px 20px 6px; }
+  .follow::-webkit-scrollbar { display: none; }
+  .follow button { flex: none; padding: 12px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); font-size: 15.5px; color: #dfe4e1; background: rgba(255,255,255,.03); transition: background .2s, transform .2s var(--ease); }
+  .follow button:active { background: rgba(255,255,255,.1); transform: scale(.97); }
+
+  /* composer */
+  .composer { position: relative; z-index: 4; padding: 12px 20px 10px; background: linear-gradient(transparent, var(--bg) 35%); }
+  .composer form { display: flex; align-items: center; gap: 10px; height: 68px; border-radius: 34px; background: #1b1e20; border: 1px solid rgba(255,255,255,.06); padding: 0 12px 0 26px; }
+  .composer input { flex: 1; min-width: 0; background: none; border: 0; color: var(--text); font: inherit; font-size: 18.5px; letter-spacing: -.2px; }
+  .composer input::placeholder { color: #8a9290; }
+  .composer .mic { color: #cfd5d2; width: 32px; height: 32px; display: grid; place-items: center; }
+  .composer .send { width: 46px; height: 46px; border-radius: 50%; background: #fff; color: #0c0f10; display: grid; place-items: center; transition: transform .2s var(--ease), background .2s; position: relative; }
+  .composer .send:active { transform: scale(.92); }
+  .composer .send svg { position: absolute; transition: opacity .2s, transform .2s var(--ease); }
+  .composer .send .arrow { opacity: 0; transform: translateY(6px); }
+  .composer.has-text .send .wave { opacity: 0; transform: scale(.6); }
+  .composer.has-text .send .arrow { opacity: 1; transform: none; }
+  .homebar { position: relative; z-index: 4; height: 22px; display: grid; place-items: center; }
+  .homebar span { width: 140px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.85); }
+
+  /* ---------- design notes (outside the phone) ---------- */
+  .notes-toggle { position: fixed; top: 18px; right: 18px; z-index: 10; padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: var(--text-2); font-size: 14px; font-weight: 500; }
+  .notes-toggle:hover { color: var(--text); background: rgba(255,255,255,.1); }
+  .notes { width: 340px; max-height: 844px; overflow-y: auto; display: none; flex-direction: column; gap: 18px; color: var(--text-2); font-size: 14.5px; line-height: 1.5; scrollbar-width: thin; }
+  .notes.show { display: flex; }
+  .notes h2 { margin: 0; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+  .notes h3 { margin: 0 0 4px; font-size: 15px; color: var(--text); font-weight: 600; }
+  .notes p { margin: 0; }
+  .notes .n { padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+  .notes .n .tag { display: inline-block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--lime); font-weight: 700; margin-bottom: 6px; }
+
+  @media (max-width: 560px) {
+    .stage { padding: 0; }
+    .phone { width: 100%; height: 100dvh; max-height: none; border-radius: 0; box-shadow: none; }
+    .statusbar { display: none; }
+    .topbar { padding-top: 14px; }
+    .notes-toggle, .notes { display: none !important; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="calligraphy" aria-hidden="true"><span class="a">مال</span><span class="b">مال</span></div>
+
+    <div class="statusbar" aria-hidden="true">
+      <span>5:39</span>
+      <span class="right">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx=".8"/><rect x="5" y="5.5" width="3" height="6.5" rx=".8"/><rect x="10" y="3" width="3" height="9" rx=".8"/><rect x="15" y="0" width="3" height="12" rx=".8"/></svg>
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M1 4.2a11 11 0 0 1 15 0"/><path d="M3.8 7.2a7 7 0 0 1 9.4 0"/><path d="M6.6 10a3 3 0 0 1 3.8 0"/></svg>
+        <span class="battery">90</span>
+      </span>
+    </div>
+
+    <header class="topbar">
+      <button class="icon-btn" id="back" aria-label="Back">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+      </button>
+      <div class="group">
+        <button class="icon-btn" id="newChat" aria-label="New chat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L13 14l-4 1 1-4Z"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="scroll-fade"></div>
+
+    <main class="scroll" id="scroll">
+      <section class="home" id="home">
+        <h1 class="greeting">Salam, Zoe</h1>
+        <p class="sub">How can I help you today?</p>
+        <div class="chips" id="chips"></div>
+      </section>
+      <section class="thread" id="thread" hidden></section>
+    </main>
+
+    <footer class="composer" id="composer">
+      <form id="form" autocomplete="off">
+        <input id="input" type="text" placeholder="Ask anything..." aria-label="Message Mal" enterkeyhint="send">
+        <button type="button" class="mic" aria-label="Voice input">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        </button>
+        <button type="submit" class="send" id="send" aria-label="Send">
+          <svg class="wave" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 10v4"/></svg>
+          <svg class="arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+        </button>
+      </form>
+    </footer>
+    <div class="homebar" aria-hidden="true"><span></span></div>
+  </div>
+
+  <aside class="notes" id="notes">
+    <h2>Design notes</h2>
+    <div class="n"><span class="tag">Reasoning</span><h3>Show the work, then get out of the way</h3><p>The steps name what the assistant is actually reading (August transactions, July comparison). When the answer arrives the card collapses to one line so it never competes with the insight. Tap to reopen.</p></div>
+    <div class="n"><span class="tag">Primary response</span><h3>One sentence is the answer. The card is evidence.</h3><p>Total, direction versus last month, and the single thing that changed, in plain text like any other reply. The card sits under it as support, not as a dashboard dropped into a bubble.</p></div>
+    <div class="n"><span class="tag">Earns a tap</span><h3>Four categories, three behind a fold</h3><p>The stacked bar gives proportion at a glance. Only the four biggest rows show by default; the rest are one tap away, so the message stays roughly one screen tall.</p></div>
+    <div class="n"><span class="tag">Drill-down</span><h3>Tapping a category asks a question</h3><p>A category row posts a follow-up turn instead of opening a modal. The drill-down lives in the conversation history and can be shared, scrolled back to, or asked again in words.</p></div>
+    <div class="n"><span class="tag">Round-Up</span><h3>Only where the data makes it relevant</h3><p>The Round-Up moment appears inside a drill-down with many small card purchases (dining, transport, groceries), using the real spare-change figure for that category. It never appears on the headline recap, transfers or bills. "Not now" removes it for the session.</p></div>
+    <div class="n"><span class="tag">Monthly habit</span><h3>The ritual is opt-in</h3><p>"Send this every month" is a follow-up chip, not a nudge. Accepting it gives a dated confirmation, so the user knows exactly when the next recap lands.</p></div>
+  </aside>
+</div>
+<button class="notes-toggle" id="notesToggle">Design notes</button>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const phone = $('#phone'), scroll = $('#scroll'), home = $('#home'), thread = $('#thread');
+  const form = $('#form'), input = $('#input'), composer = $('#composer');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = ms => new Promise(r => setTimeout(r, reduced ? 10 : ms));
+  const fmt = n => 'AED ' + n.toLocaleString('en-AE', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  const pct = (now, prev) => Math.round((now - prev) / prev * 100);
+
+  /* ---------- icons ---------- */
+  const I = {
+    check: '<svg class="check" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+    chev: '<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+    go: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>',
+    copy: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    speak: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+    up: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M7 10 12 3a2.5 2.5 0 0 1 2.5 2.5V9h5a2 2 0 0 1 2 2.3l-1.2 7.4A2.5 2.5 0 0 1 17.8 21H7"/></svg>',
+    down: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1z"/><path d="m17 14-5 7a2.5 2.5 0 0 1-2.5-2.5V15h-5a2 2 0 0 1-2-2.3l1.2-7.4A2.5 2.5 0 0 1 6.2 3H17"/></svg>',
+    share: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>',
+    coin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h3.2a1.8 1.8 0 0 1 0 3.6H11a1.8 1.8 0 0 0 0 3.6h3.5"/></svg>',
+  };
+
+  /* ---------- data: August 2026, compared with July ---------- */
+  const CATS = [
+    { key: 'dining', name: 'Dining', now: 1940, prev: 2720, count: 14, spare: 9.40,
+      merchants: [['Talabat', 640, '9 orders'], ['Zuma', 385, '1 visit'], ['Arabian Tea House', 210, '3 visits'], ['Other', 705, '']],
+      largest: ['Zuma', 385, 'Fri 21 Aug'], pattern: 'Most of it landed Thursday to Saturday evenings. You ordered in 9 times, down from 15 in July.' },
+    { key: 'transfers', name: 'Transfers', now: 1800, prev: 2600, count: 3, spare: 0,
+      merchants: [['Mum', 1200, 'monthly'], ['Ahmed R.', 400, ''], ['Nada K.', 200, '']],
+      largest: ['Mum', 1200, 'Sun 30 Aug'], pattern: 'The same standing transfer as every month. July had one extra transfer of AED 800 that did not repeat.' },
+    { key: 'groceries', name: 'Groceries', now: 1610, prev: 1490, count: 11, spare: 6.20,
+      merchants: [['Carrefour', 920, '6 trips'], ['Spinneys', 480, '3 trips'], ['Kibsons', 210, '2 deliveries']],
+      largest: ['Carrefour', 310, 'Sat 8 Aug'], pattern: 'Two big weekend shops made up more than half. The rest were small top-ups midweek.' },
+    { key: 'shopping', name: 'Shopping', now: 1380, prev: 1050, count: 7, spare: 3.10,
+      merchants: [['Noon', 899, '1 order'], ['Zara', 260, '2 visits'], ['Apple', 221, '1 purchase']],
+      largest: ['Noon', 899, 'Fri 14 Aug'], pattern: 'One Noon order is almost two thirds of the category. Without it, shopping would have been below July.' },
+    { key: 'transport', name: 'Transport', now: 720, prev: 750, count: 19, spare: 8.90,
+      merchants: [['Careem', 410, '13 rides'], ['ENOC', 240, '4 fill-ups'], ['Salik', 70, '2 top-ups']],
+      largest: ['ENOC', 85, 'Sun 2 Aug'], pattern: 'Careem most weekday mornings, usually between 8 and 9am. Fuel was steady.' },
+    { key: 'bills', name: 'Bills & utilities', now: 510, prev: 505, count: 2, spare: 0,
+      merchants: [['DEWA', 340, 'electricity & water'], ['du', 170, 'mobile & home']],
+      largest: ['DEWA', 340, 'Tue 4 Aug'], pattern: 'Bills barely moved. DEWA was AED 5 higher, which lines up with the hotter month.' },
+    { key: 'entertainment', name: 'Entertainment', now: 460, prev: 455, count: 5, spare: 2.30,
+      merchants: [['Dubai Opera', 200, '1 ticket'], ['VOX Cinemas', 180, '3 visits'], ['Netflix', 56, 'monthly'], ['Spotify', 24, 'monthly']],
+      largest: ['Dubai Opera', 200, 'Thu 27 Aug'], pattern: 'Same as July almost to the dirham. Subscriptions are the only fixed part.' },
+  ];
+  const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)', 'var(--c7)'];
+  CATS.forEach((c, i) => c.color = COLORS[i]);
+  const TOTAL = CATS.reduce((s, c) => s + c.now, 0);          // 8,420
+  const PREV = CATS.reduce((s, c) => s + c.prev, 0);          // 9,570
+  const CARD_COUNT = CATS.filter(c => c.spare).reduce((s, c) => s + c.count, 0); // 56
+  const SPARE = CATS.reduce((s, c) => s + c.spare, 0);        // 29.90
+  let roundUpDismissed = false, roundUpShown = false, roundUpOn = false, busy = false, started = false;
+
+  /* ---------- home chips ---------- */
+  const CHIPS = ['What can Mal do for me', 'How was my spending last month', 'What are the fees', 'Which countries are supported', 'How do I open an account'];
+  const chipsEl = $('#chips');
+  let focus = 1;
+  CHIPS.forEach(t => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = t; b.onclick = () => { input.value = t + '?'; input.dispatchEvent(new Event('input')); input.focus(); }; chipsEl.appendChild(b); });
+  const layoutChips = () => [...chipsEl.children].forEach((c, i) => c.dataset.d = Math.min(3, Math.abs(i - focus)));
+  layoutChips();
+  const cycle = setInterval(() => { if (started) return clearInterval(cycle); focus = (focus + 1) % CHIPS.length; layoutChips(); }, 3200);
+
+  /* ---------- composer ---------- */
+  input.addEventListener('input', () => composer.classList.toggle('has-text', input.value.trim().length > 0));
+  form.addEventListener('submit', e => { e.preventDefault(); const t = input.value.trim(); if (!t || busy) return; input.value = ''; input.dispatchEvent(new Event('input')); route(t); });
+  $('#newChat').onclick = reset; $('#back').onclick = reset;
+  $('#notesToggle').onclick = () => $('#notes').classList.toggle('show');
+
+  function reset() {
+    if (!started) return;
+    started = false; busy = false; roundUpShown = false;
+    phone.classList.remove('chatting', 'thinking');
+    thread.innerHTML = ''; thread.hidden = true;
+    home.hidden = false; home.classList.remove('leaving');
+    focus = 1; layoutChips();
+  }
+
+  /* ---------- thread helpers ---------- */
+  const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; };
+  const toBottom = () => requestAnimationFrame(() => scroll.scrollTo({ top: scroll.scrollHeight, behavior: reduced ? 'auto' : 'smooth' }));
+
+  async function enterChat() {
+    if (started) return; started = true;
+    home.classList.add('leaving'); await wait(300);
+    home.hidden = true; thread.hidden = false; phone.classList.add('chatting');
+  }
+  function userTurn(text) {
+    const t = el('div', 'turn'); t.appendChild(el('div', 'user', text)); thread.appendChild(t); toBottom(); return t;
+  }
+  async function reasoning(turn, title, steps) {
+    phone.classList.add('thinking');
+    const r = el('div', 'reason open');
+    const head = el('button', 'reason-head'); head.type = 'button';
+    head.innerHTML = `<span class="l"><span class="title">${title}</span></span><span class="meta"><span class="count">0 steps so far</span>${I.chev}</span>`;
+    const body = el('div', 'reason-body'); const inner = el('div'); const ul = el('ul', 'steps'); inner.appendChild(ul); body.appendChild(inner);
+    r.append(head, body); turn.appendChild(r); toBottom();
+    head.onclick = () => r.classList.toggle('open');
+    let li;
+    for (let i = 0; i < steps.length; i++) {
+      if (li) li.querySelector('.ico').innerHTML = I.check;
+      li = el('li', '', `<span class="ico"><span class="spinner"></span></span><span>${steps[i]}</span>`);
+      ul.appendChild(li); head.querySelector('.count').textContent = `${i} step${i === 1 ? '' : 's'} so far`; toBottom();
+      await wait(650 + Math.random() * 350);
+    }
+    li.querySelector('.ico').innerHTML = I.check; await wait(400);
+    r.classList.remove('open');
+    head.innerHTML = `<span class="l"><span style="color:var(--green);display:grid;place-items:center">${I.check}</span><span>${steps.length} check${steps.length === 1 ? '' : 's'} complete</span></span><span class="meta">${I.chev}</span>`;
+    head.onclick = () => r.classList.toggle('open');
+    phone.classList.remove('thinking');
+    await wait(250);
+  }
+  async function aiText(turn, html) {
+    const p = el('p', 'ai'); turn.appendChild(p);
+    // split on spaces but keep inline tags intact
+    const tokens = html.split(/(\s+)/);
+    let i = 0;
+    for (const tok of tokens) {
+      if (!tok.trim()) { p.appendChild(document.createTextNode(' ')); continue; }
+      const s = el('span', 'w', tok); s.style.animationDelay = '0s'; p.appendChild(s);
+      if (i++ % 2 === 0) { toBottom(); await wait(38); }
+    }
+    return p;
+  }
+  function actions(turn) {
+    const a = el('div', 'actions');
+    [['copy', 'Copy'], ['speak', 'Read aloud'], ['up', 'Good response'], ['down', 'Bad response'], ['share', 'Share']].forEach(([k, label]) => {
+      const b = el('button', '', I[k]); b.type = 'button'; b.setAttribute('aria-label', label);
+      if (k === 'up' || k === 'down') b.onclick = () => { [...a.children].forEach(x => x.classList.remove('on')); b.classList.add('on'); };
+      a.appendChild(b);
+    });
+    turn.appendChild(a); toBottom();
+  }
+  function followUps(turn, items) {
+    const f = el('div', 'follow');
+    items.forEach(([label, fn]) => { const b = el('button', '', label); b.type = 'button'; b.onclick = () => { if (!busy) fn(label); }; f.appendChild(b); });
+    turn.appendChild(f); toBottom();
+  }
+  const deltaHtml = (now, prev, cls = 'delta') => {
+    const d = pct(now, prev); const dir = d < -1 ? 'down' : d > 1 ? 'up' : 'flat';
+    const arrow = dir === 'down' ? '↓' : dir === 'up' ? '↑' : '→';
+    return `<span class="${cls} ${dir}">${arrow} ${dir === 'flat' ? 'same' : Math.abs(d) + '%'}</span>`;
+  };
+
+  /* ---------- flows ---------- */
+  async function route(text) {
+    const t = text.toLowerCase();
+    await enterChat();
+    if (/spend|spent|spending|last month|august/.test(t) || !thread.children.length) return overview(text);
+    return fallback(text);
+  }
+
+  async function overview(text) {
+    busy = true;
+    const turn = userTurn(text);
+    const ai = el('div', 'turn'); thread.appendChild(ai);
+    await reasoning(ai, 'Looking into your spending', ['Reading your August transactions', 'Grouping 118 payments into categories', 'Comparing against July', 'Looking for what changed']);
+    await aiText(ai, `You spent <b>${fmt(TOTAL)}</b> in August, about <b>${Math.abs(pct(TOTAL, PREV))}% less</b> than July. Dining and transfers dropped the most. Shopping went up by almost a third, mostly down to one Noon order.`);
+    await wait(200);
+    ai.appendChild(insightCard()); toBottom();
+    await wait(500);
+    actions(ai);
+    followUps(ai, [
+      ['Why did shopping go up?', () => drill(CATS.find(c => c.key === 'shopping'), 'Why did shopping go up?')],
+      ['My biggest purchase', biggest],
+      ['Send this every month', monthly],
+    ]);
+    busy = false;
+  }
+
+  function insightCard() {
+    const card = el('div', 'card');
+    card.innerHTML = `
+      <div class="card-top"><span class="eyebrow">August spending</span>${deltaHtml(TOTAL, PREV)}</div>
+      <p class="big"><small>AED</small>${TOTAL.toLocaleString()}</p>
+      <p class="big-sub">July was ${fmt(PREV)} · 118 payments</p>
+      <div class="stack" role="img" aria-label="Share of spending by category"></div>
+      <ul class="rows"></ul>`;
+    const stack = card.querySelector('.stack'), rows = card.querySelector('.rows');
+    CATS.forEach((c, i) => {
+      const s = el('span'); s.style.flex = `${c.now} 0 0`; s.style.background = c.color; s.style.animationDelay = `${i * 60}ms`; s.dataset.key = c.key; stack.appendChild(s);
+      const li = el('li', i >= 4 ? 'hidden' : '');
+      const b = el('button', 'row'); b.type = 'button';
+      b.innerHTML = `<span class="dot" style="background:${c.color}"></span><span class="name">${c.name}</span><span class="amt">${c.now.toLocaleString()}</span>${deltaHtml(c.now, c.prev, 'd')}<span class="go">${I.go}</span>`;
+      b.onmouseenter = () => { stack.classList.add('dim'); s.classList.add('lit'); };
+      b.onmouseleave = () => { stack.classList.remove('dim'); s.classList.remove('lit'); };
+      b.onclick = () => { if (!busy) drill(c, `Show me ${c.name.toLowerCase()}`); };
+      li.appendChild(b); rows.appendChild(li);
+    });
+    const more = el('button', 'more', `Show all ${CATS.length} categories`); more.type = 'button';
+    more.onclick = () => { rows.querySelectorAll('.hidden').forEach(x => x.classList.remove('hidden')); more.remove(); toBottom(); };
+    card.appendChild(more);
+    return card;
+  }
+
+  async function drill(c, question) {
+    busy = true;
+    userTurn(question);
+    const ai = el('div', 'turn'); thread.appendChild(ai);
+    await reasoning(ai, `Looking at ${c.name.toLowerCase()}`, [`Filtering ${c.count} ${c.name.toLowerCase()} payments`, 'Ranking merchants', 'Comparing with July']);
+    const d = pct(c.now, c.prev);
+    const dirWord = d < -1 ? `down ${Math.abs(d)}% from July` : d > 1 ? `up ${d}% on July` : 'about the same as July';
+    const lead = {
+      dining: 'Fewer takeaway orders did most of the work.',
+      shopping: 'One order explains nearly all of the rise.',
+      groceries: 'Two big weekend shops pushed it over July.',
+      transfers: 'July had one extra transfer that did not repeat.',
+      transport: 'Mostly Careem, and steady.',
+      bills: 'Nothing unusual here.',
+      entertainment: 'Nothing unusual here.',
+    }[c.key];
+    await aiText(ai, `${c.name} came to <b>${fmt(c.now)}</b>, ${dirWord}. ${lead}`);
+    await wait(200);
+    ai.appendChild(drillCard(c)); toBottom();
+    await wait(450);
+    if (c.spare && !roundUpDismissed && !roundUpShown && !roundUpOn) { ai.appendChild(roundUp(c)); roundUpShown = true; toBottom(); await wait(300); }
+    actions(ai);
+    const others = CATS.filter(x => x.key !== c.key).slice(0, 2);
+    followUps(ai, [
+      ...others.map(o => [`Show me ${o.name.toLowerCase()}`, () => drill(o, `Show me ${o.name.toLowerCase()}`)]),
+      ['My biggest purchase', biggest],
+    ]);
+    busy = false;
+  }
+
+  function drillCard(c) {
+    const card = el('div', 'card');
+    const top = c.merchants[0];
+    const max = Math.max(...c.merchants.map(m => m[1]));
+    card.innerHTML = `
+      <div class="card-top"><span class="eyebrow">${c.name} · August</span>${deltaHtml(c.now, c.prev)}</div>
+      <p class="big"><small>AED</small>${c.now.toLocaleString()}</p>
+      <p class="big-sub">July was ${fmt(c.prev)} · ${c.count} payments</p>
+      <div class="kv">
+        <div><div class="k">Top merchant</div><div class="v">${top[0]}</div><div class="v2">${fmt(top[1])}${top[2] ? ' · ' + top[2] : ''}</div></div>
+        <div><div class="k">Largest payment</div><div class="v">${fmt(c.largest[1])}</div><div class="v2">${c.largest[0]} · ${c.largest[2]}</div></div>
+      </div>
+      <ul class="bars">${c.merchants.map((m, i) => `<li><span class="n">${m[0]}</span><span class="a">${fmt(m[1])}</span><span class="track"><span class="fill" style="width:${m[1] / max * 100}%;animation-delay:${i * 80}ms;background:${c.color}"></span></span></li>`).join('')}</ul>
+      <p class="note">${c.pattern}</p>`;
+    return card;
+  }
+
+  function roundUp(c) {
+    const a = el('div', 'aside');
+    a.innerHTML = `<span class="coin">${I.coin}</span><div><p>Your ${c.count} ${c.name.toLowerCase()} payments left <b>${fmt(c.spare)}</b> in spare change. Round-Up Savings would have set that aside on its own, about <b>${fmt(SPARE)}</b> a month across your card.</p>
+      <div class="links"><button type="button" class="primary">See how it works</button><button type="button" class="quiet">Not now</button></div></div>`;
+    a.querySelector('.primary').onclick = () => { if (!busy) roundUpExplain(); };
+    a.querySelector('.quiet').onclick = () => { roundUpDismissed = true; a.classList.add('gone'); setTimeout(() => a.remove(), 380); };
+    return a;
+  }
+
+  async function roundUpExplain() {
+    busy = true;
+    userTurn('How does Round-Up work?');
+    const ai = el('div', 'turn'); thread.appendChild(ai);
+    await reasoning(ai, 'Checking Round-Up', ['Estimating from your August card payments']);
+    await aiText(ai, `Every card payment is rounded up to the next dirham and the difference moves into a separate <b>Round-Up pot</b>. It is Shariah-compliant, there is no fee, and you can move the money back whenever you like. Based on August that is roughly <b>${fmt(Math.round(SPARE))} a month</b> across ${CARD_COUNT} payments, without changing anything you do.`);
+    await wait(200);
+    const cta = el('button', 'cta', `${I.coin} Turn on Round-Up`); cta.type = 'button';
+    cta.onclick = async () => {
+      roundUpOn = true; cta.remove();
+      const c = el('div', 'confirm', `<span class="ok">${I.check}</span><div><div class="t">Round-Up is on</div><div class="s">Your first round-up lands with your next card payment.</div></div>`);
+      ai.insertBefore(c, ai.querySelector('.actions')); toBottom();
+    };
+    ai.appendChild(cta); toBottom();
+    await wait(300);
+    actions(ai);
+    followUps(ai, [['Back to my spending', () => overview('Back to my spending')], ['Send this every month', monthly]]);
+    busy = false;
+  }
+
+  async function biggest() {
+    busy = true;
+    userTurn('What was my biggest purchase?');
+    const ai = el('div', 'turn'); thread.appendChild(ai);
+    await reasoning(ai, 'Finding your largest payment', ['Scanning 118 August payments', 'Excluding transfers']);
+    await aiText(ai, `Your largest single purchase was <b>AED 899 at Noon</b> on Friday 14 August. It is the main reason shopping was up on July.`);
+    await wait(200);
+    ai.appendChild(el('div', 'receipt', `<span class="logo">noon</span><div class="m"><div class="t">Noon</div><div class="s">Fri 14 Aug · Shopping · Mal card ending 4021</div></div><span class="p">AED 899</span>`)); toBottom();
+    await wait(400);
+    actions(ai);
+    followUps(ai, [['Show me shopping', () => drill(CATS.find(c => c.key === 'shopping'), 'Show me shopping')], ['Send this every month', monthly]]);
+    busy = false;
+  }
+
+  async function monthly() {
+    busy = true;
+    userTurn('Send this every month');
+    const ai = el('div', 'turn'); thread.appendChild(ai);
+    await reasoning(ai, 'Setting up your recap', ['Saving a monthly reminder']);
+    await aiText(ai, `Done. I will send your spending recap on the <b>1st of every month</b> at 9am. Your next one covers September and arrives on Thursday 1 October.`);
+    await wait(200);
+    ai.appendChild(el('div', 'confirm', `<span class="ok">${I.check}</span><div><div class="t">Monthly recap is on</div><div class="s">Next: Thu 1 Oct, 9:00am · Change anytime in Settings</div></div>`)); toBottom();
+    await wait(400);
+    actions(ai);
+    followUps(ai, [['My biggest purchase', biggest], ['Show me dining', () => drill(CATS[0], 'Show me dining')]]);
+    busy = false;
+  }
+
+  async function fallback(text) {
+    busy = true;
+    userTurn(text);
+    const ai = el('div', 'turn'); thread.appendChild(ai);
+    await reasoning(ai, 'Thinking', ['Understanding your question']);
+    await aiText(ai, `This prototype only covers the monthly spending recap, so I cannot answer that one yet. Try asking about last month's spending, or pick one of the suggestions below.`);
+    await wait(200);
+    actions(ai);
+    followUps(ai, [['How was my spending last month?', overview], ['My biggest purchase', biggest]]);
+    busy = false;
+  }
+})();
+</script>
