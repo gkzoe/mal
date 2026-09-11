@@ -252,23 +252,30 @@ struct FollowUpChips: View {
     let onTap: (FollowUp) -> Void
 
     var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 10) {
-                ForEach(items) { item in
-                    Button { onTap(item) } label: {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ask a follow-up question")
+                .font(.system(size: 13.5, weight: .medium))
+                .foregroundStyle(Theme.text3)
+                .padding(.leading, 4)
+                .padding(.bottom, 2)
+            ForEach(items) { item in
+                Button { onTap(item) } label: {
+                    HStack(spacing: 10) {
                         Text(item.label)
-                            .font(.system(size: 15.5))
-                            .foregroundStyle(Color(hex: 0xDFE4E1))
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 18)
-                            .glassCapsule()
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color(hex: 0xE3E7E5))
+                            .multilineTextAlignment(.leading)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.text3)
                     }
-                    .buttonStyle(PressStyle())
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 18)
+                    .glassCapsule()
                 }
+                .buttonStyle(PressStyle())
             }
-            .padding(.horizontal, 20)
         }
-        .scrollIndicators(.hidden)
-        .padding(.horizontal, -20)
+        .padding(.top, 4)
     }
 }
