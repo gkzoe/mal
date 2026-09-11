@@ -174,37 +174,41 @@ struct ReasoningCard: View {
     var body: some View {
         VStack(spacing: 0) {
             Button(action: toggle) {
-                HStack {
+                HStack(spacing: 12) {
                     if reasoning.finished {
-                        HStack(spacing: 14) {
+                        HStack(spacing: 12) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(Theme.green)
                             Text("\(reasoning.steps.count) check\(reasoning.steps.count == 1 ? "" : "s") complete")
-                                .font(.system(size: 17.5))
+                                .font(.system(size: 16.5))
                                 .foregroundStyle(Color(hex: 0xC9D0CD))
                         }
                     } else {
                         Text(reasoning.title)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(Color(hex: 0xE8EBEA))
+                            .font(.system(size: 17.5, weight: .medium))
+                            .foregroundStyle(Color(hex: 0xC9D0CD))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
-                    Spacer()
+                    Spacer(minLength: 8)
                     HStack(spacing: 10) {
                         if !reasoning.finished {
-                            Text("\(reasoning.completed) step\(reasoning.completed == 1 ? "" : "s") so far")
-                                .font(.system(size: 17))
+                            Text("\(reasoning.completed) step\(reasoning.completed == 1 ? "" : "s") taken")
+                                .font(.system(size: 16))
                                 .foregroundStyle(Color(hex: 0xB3BAB7))
                                 .contentTransition(.numericText())
+                                .lineLimit(1)
+                                .fixedSize()
                         }
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Color(hex: 0xAAB1AE))
                             .rotationEffect(.degrees(reasoning.expanded ? 180 : 0))
                     }
                 }
-                .padding(.vertical, 17)
-                .padding(.horizontal, 22)
+                .padding(.vertical, 15)
+                .padding(.horizontal, 20)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -213,11 +217,11 @@ struct ReasoningCard: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Divider().overlay(Theme.line)
                     ForEach(0..<reasoning.revealed, id: \.self) { index in
-                        HStack(spacing: 16) {
+                        HStack(spacing: 14) {
                             ZStack {
                                 if index < reasoning.completed {
                                     Image(systemName: "checkmark")
-                                        .font(.system(size: 17, weight: .semibold))
+                                        .font(.system(size: 15, weight: .semibold))
                                         .foregroundStyle(Theme.green)
                                         .transition(.scale(scale: 0.4).combined(with: .opacity))
                                 } else {
@@ -226,18 +230,20 @@ struct ReasoningCard: View {
                                         .controlSize(.small)
                                 }
                             }
-                            .frame(width: 24, height: 24)
+                            .frame(width: 20, height: 20)
                             Text(reasoning.steps[index])
-                                .font(.system(size: 18))
+                                .font(.system(size: 16))
                                 .foregroundStyle(Color(hex: 0xD8DDDA))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 10)
                         .transition(.opacity.combined(with: .offset(y: 8)))
                     }
                 }
-                .padding(.horizontal, 22)
-                .padding(.top, 4)
-                .padding(.bottom, 12)
+                .padding(.horizontal, 20)
+                .padding(.top, 6)
+                .padding(.bottom, 10)
                 .transition(.opacity)
             }
         }

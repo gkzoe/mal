@@ -1,28 +1,24 @@
 import SwiftUI
 
-/// Picker first; tapping a variation opens its chat. The chat's back arrow returns here.
+/// Picker first; tapping a variation pushes its chat. The chat's back arrow pops back here.
 struct RootView: View {
-    @State private var selected: Variant?
+    @State private var path: [Variant] = []
 
     var body: some View {
-        ZStack {
-            if let variant = selected {
-                ChatScreen(variant: variant) {
-                    withAnimation(.easeInOut(duration: 0.3)) { selected = nil }
-                }
-                .id(variant)
-                .transition(.move(edge: .trailing).combined(with: .opacity))
-            } else {
-                VariationMenu { variant in
-                    withAnimation(.easeInOut(duration: 0.3)) { selected = variant }
-                }
+        NavigationStack(path: $path) {
+            VariationMenu { variant in path = [variant] }
                 .background {
                     Backdrop(active: false, thinking: false)
                         .ignoresSafeArea()
                 }
-                .transition(.opacity)
-            }
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: Variant.self) { variant in
+                    ChatScreen(variant: variant) { path.removeAll() }
+                        .toolbar(.hidden, for: .navigationBar)
+                        .navigationBarBackButtonHidden(true)
+                }
         }
+        .tint(Theme.lime)
     }
 }
 
@@ -151,6 +147,7 @@ struct CircleButton: View {
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 48)
                 .glassCircle()
+                .contentShape(Circle())
         }
         .buttonStyle(PressStyle())
     }
