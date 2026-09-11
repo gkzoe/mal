@@ -66,9 +66,9 @@ struct MessageView: View {
                 if let card = message.card {
                     cardView(card)
                 }
-                if let categoryID = message.roundUpCategory {
+                if let scope = message.roundUp {
                     RoundUpAside(
-                        category: SpendData.category(categoryID),
+                        scope: scope,
                         onLearn: { model.explainRoundUp() },
                         onDismiss: { model.dismissRoundUp(message.id) }
                     )

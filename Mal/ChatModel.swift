@@ -106,7 +106,7 @@ final class ChatModel {
     func dismissRoundUp(_ id: UUID) {
         roundUpDismissed = true
         withAnimation(.easeOut(duration: 0.3)) {
-            update(id) { $0.roundUpCategory = nil }
+            update(id) { $0.roundUp = nil }
         }
     }
 
@@ -250,6 +250,14 @@ final class ChatModel {
             TextSegment(" and \(aed(gap)) under your usual month. Dining and transfers dropped the most, and Careem was your biggest merchant once rides, groceries and food are added up. Swipe for each view.")
         ])
         await showCard(id, .rail)
+        // Cross-sell: the whole month's spare change, right after the recap.
+        if !roundUpDismissed && !roundUpOn {
+            await pause(700)
+            roundUpShown = true
+            withAnimation(.spring(duration: 0.5)) {
+                update(id) { $0.roundUp = .month }
+            }
+        }
         await finish(id, [
             FollowUp(label: "Why did shopping go up?", action: .drill("shopping")),
             FollowUp(label: "Why was August lower?", action: .whyLower),
@@ -362,7 +370,7 @@ final class ChatModel {
             await pause(450)
             roundUpShown = true
             withAnimation(.spring(duration: 0.5)) {
-                update(id) { $0.roundUpCategory = c.id }
+                update(id) { $0.roundUp = .category(c.id) }
             }
         }
         let others = SpendData.categories.filter { $0.id != c.id }.prefix(2)

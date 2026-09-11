@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Variation 2: six-month trend
 
 struct TrendCard: View {
+    var fillHeight = false
     @State private var grown = false
 
     private func short(_ n: Int) -> String { String(format: "%.1fk", Double(n) / 1000) }
@@ -62,6 +63,7 @@ struct TrendCard: View {
                 withAnimation(.spring(duration: 0.9)) { grown = true }
             }
         }
+        .frame(maxHeight: fillHeight ? .infinity : nil, alignment: .top)
         .padding(20)
         .cardBackground(radius: 26)
     }
@@ -191,11 +193,13 @@ struct CategoryTag: View {
 }
 
 struct MerchantsCard: View {
+    var compact = false      // rail: top three, no expander
+    var fillHeight = false
     let onTap: (MerchantTotal) -> Void
     @State private var showAll = false
 
     private var merchants: [MerchantTotal] { SpendData.merchants }
-    private var visible: [MerchantTotal] { showAll ? merchants : Array(merchants.prefix(5)) }
+    private var visible: [MerchantTotal] { showAll ? merchants : Array(merchants.prefix(compact ? 3 : 5)) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -247,7 +251,7 @@ struct MerchantsCard: View {
                 }
                 .buttonStyle(PressStyle())
             }
-            if !showAll {
+            if !showAll && !compact {
                 Divider().overlay(Theme.line)
                 Button {
                     withAnimation(.spring(duration: 0.4)) { showAll = true }
@@ -263,6 +267,7 @@ struct MerchantsCard: View {
                 Color.clear.frame(height: 8)
             }
         }
+        .frame(maxHeight: fillHeight ? .infinity : nil, alignment: .top)
         .padding(.top, 20)
         .padding(.horizontal, 20)
         .padding(.bottom, 4)
@@ -402,6 +407,8 @@ struct WidgetRail: View {
     let onCategory: (SpendCategory) -> Void
     let onMerchant: (MerchantTotal) -> Void
     @State private var page: Int? = 0
+    /// Tallest natural card height; every card is then stretched to it.
+    @State private var railHeight: CGFloat?
 
     private let labels = ["By category", "Six months", "By merchant"]
 
@@ -409,9 +416,9 @@ struct WidgetRail: View {
         VStack(alignment: .leading, spacing: 12) {
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 12) {
-                    railItem(0) { InsightCard { onCategory($0) } }
-                    railItem(1) { TrendCard() }
-                    railItem(2) { MerchantsCard { onMerchant($0) } }
+                    railItem(0) { InsightCard(compact: true, fillHeight: railHeight != nil) { onCategory($0) } }
+                    railItem(1) { TrendCard(fillHeight: railHeight != nil) }
+                    railItem(2) { MerchantsCard(compact: true, fillHeight: railHeight != nil) { onMerchant($0) } }
                 }
                 .scrollTargetLayout()
             }
@@ -420,6 +427,9 @@ struct WidgetRail: View {
             .scrollIndicators(.hidden)
             .contentMargins(.horizontal, 20, for: .scrollContent)
             .padding(.horizontal, -20)   // bleed to the screen edges
+            .onPreferenceChange(RailHeightKey.self) { measured in
+                if measured > (railHeight ?? 0) { railHeight = measured }
+            }
 
             HStack(spacing: 6) {
                 ForEach(0..<3, id: \.self) { i in
@@ -442,7 +452,20 @@ struct WidgetRail: View {
                 .animation(.easeInOut(duration: 0.25), value: page)
             content()
         }
+        .frame(height: railHeight, alignment: .top)
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: RailHeightKey.self, value: geo.size.height)
+            }
+        )
         .containerRelativeFrame(.horizontal) { width, _ in width - 56 }
         .id(index)
+    }
+}
+
+private struct RailHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }

@@ -69,6 +69,8 @@ struct DeltaPill: View {
 // MARK: - Insight card (primary response)
 
 struct InsightCard: View {
+    var compact = false      // rail: fixed top four, no expander
+    var fillHeight = false   // rail: stretch the card to the rail height
     let onTap: (SpendCategory) -> Void
     @State private var showAll = false
 
@@ -98,7 +100,7 @@ struct InsightCard: View {
                 }
             }
             .padding(.top, 8)
-            if showAll {
+            if showAll || compact {
                 Color.clear.frame(height: 8)
             } else {
                 Divider().overlay(Theme.line)
@@ -114,6 +116,7 @@ struct InsightCard: View {
                 .buttonStyle(.plain)
             }
         }
+        .frame(maxHeight: fillHeight ? .infinity : nil, alignment: .top)
         .padding(.top, 20)
         .padding(.horizontal, 20)
         .padding(.bottom, 4)
@@ -297,9 +300,28 @@ struct MerchantBar: View {
 // MARK: - Round-Up aside
 
 struct RoundUpAside: View {
-    let category: SpendCategory
+    let scope: RoundUpScope
     let onLearn: () -> Void
     let onDismiss: () -> Void
+
+    private var copy: Text {
+        switch scope {
+        case .category(let id):
+            let category = SpendData.category(id)
+            return Text("Your \(category.count) \(category.name.lowercased()) payments left ")
+                + Text(aed(category.spare)).fontWeight(.semibold).foregroundColor(.white)
+                + Text(" in spare change. Round-Up Savings would have set that aside on its own, about ")
+                + Text(aed(SpendData.spareTotal)).fontWeight(.semibold).foregroundColor(.white)
+                + Text(" a month across your card.")
+        case .month:
+            let yearly = Int((SpendData.spareTotal * 12).rounded())
+            return Text("Your \(SpendData.cardCount) card payments in August left ")
+                + Text(aed(SpendData.spareTotal)).fontWeight(.semibold).foregroundColor(.white)
+                + Text(" in spare change. Round-Up Savings would have set that aside on its own, roughly ")
+                + Text(aed(yearly)).fontWeight(.semibold).foregroundColor(.white)
+                + Text(" a year, without changing anything you do.")
+        }
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -309,11 +331,7 @@ struct RoundUpAside: View {
                 .frame(width: 36, height: 36)
                 .background(Circle().fill(Theme.lime.opacity(0.14)))
             VStack(alignment: .leading, spacing: 12) {
-                (Text("Your \(category.count) \(category.name.lowercased()) payments left ")
-                    + Text(aed(category.spare)).fontWeight(.semibold).foregroundColor(.white)
-                    + Text(" in spare change. Round-Up Savings would have set that aside on its own, about ")
-                    + Text(aed(SpendData.spareTotal)).fontWeight(.semibold).foregroundColor(.white)
-                    + Text(" a month across your card."))
+                copy
                     .font(.system(size: 16))
                     .foregroundStyle(Color(hex: 0xDFE4E1))
                     .lineSpacing(4)

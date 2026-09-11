@@ -310,6 +310,12 @@ struct FollowUp: Identifiable {
     let action: FollowAction
 }
 
+/// Where the Round-Up Savings moment is anchored: one category's spare change, or the whole month's.
+enum RoundUpScope {
+    case month
+    case category(String)
+}
+
 struct Message: Identifiable {
     let id = UUID()
     let role: Role
@@ -318,7 +324,7 @@ struct Message: Identifiable {
     var visibleWords = 0
     var reasoning: Reasoning?
     var card: CardKind?
-    var roundUpCategory: String?
+    var roundUp: RoundUpScope?
     var showActions = false
     var followUps: [FollowUp] = []
 }
