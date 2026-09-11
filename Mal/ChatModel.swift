@@ -430,7 +430,7 @@ final class ChatModel {
             TextSegment("\(aed(top[0].amount)) at \(top[0].merchant)", bold: true),
             TextSegment(" on \(top[0].longDate). That is about "),
             TextSegment("\(share)% of everything", bold: true),
-            TextSegment(" you spent in August and more than \(multiple)× the next largest, \(aed(top[1].amount)) at \(top[1].merchant). Your typical payment was around \(aed(SpendData.typicalPayment)).")
+            TextSegment(" you spent in August and more than \(multiple)× the next largest, \(aed(top[1].amount)) at \(top[1].merchant). Your other \(SpendData.otherPaymentCount) payments averaged \(aed(SpendData.otherPaymentAverage)).")
         ])
         await showCard(id, .topPurchases)
         let contextual: FollowUp

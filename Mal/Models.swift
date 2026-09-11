@@ -186,7 +186,6 @@ enum SpendData {
     static let paymentCount = categories.reduce(0) { $0 + $1.count }    // 77
     static let cardCount = categories.filter { $0.spare > 0 }.reduce(0) { $0 + $1.count }
     static let spareTotal = categories.reduce(0.0) { $0 + $1.spare }    // 29.90
-    static let typicalPayment = 48
 
     static func category(_ id: String) -> SpendCategory {
         categories.first { $0.id == id }!
@@ -250,6 +249,9 @@ enum SpendData {
         Purchase(merchant: "Zuma", amount: 385, date: "Fri 21 Aug", longDate: "Friday 21 August", categoryID: "dining"),
         Purchase(merchant: "Carrefour", amount: 310, date: "Sat 8 Aug", longDate: "Saturday 8 August", categoryID: "groceries")
     ]
+    /// Everything that is not one of the top three, so the sentence and the card agree.
+    static let otherPaymentCount = paymentCount - topPurchases.count
+    static let otherPaymentAverage = (total - topPurchases.reduce(0) { $0 + $1.amount }) / max(1, otherPaymentCount)
 }
 
 // MARK: - Conversation

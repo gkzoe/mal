@@ -339,10 +339,9 @@ struct MerchantDetailCard: View {
 struct TopPurchasesCard: View {
     var body: some View {
         let top = SpendData.topPurchases
-        let largest = top.first?.amount ?? 1
-        let topSum = top.reduce(0) { $0 + $1.amount }
-        let restCount = SpendData.paymentCount - top.count
-        let restAverage = (SpendData.total - topSum) / max(1, restCount)
+        let restCount = SpendData.otherPaymentCount
+        let restAverage = SpendData.otherPaymentAverage
+        let timesAverage = Int((Double(top[0].amount) / Double(max(1, restAverage))).rounded())
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Eyebrow("Largest purchases · August")
@@ -384,16 +383,12 @@ struct TopPurchasesCard: View {
                                 .monospacedDigit()
                                 .foregroundStyle(index == 0 ? Theme.lime : Theme.text2)
                         }
-                        MerchantBar(
-                            fraction: Double(purchase.amount) / Double(largest),
-                            color: index == 0 ? Theme.lime : Theme.ramp[category.colorIndex]
-                        )
                     }
                 }
                 .padding(.vertical, 14)
             }
             Divider().overlay(Theme.line)
-            Text("The other \(restCount) payments averaged \(aed(restAverage)). \(top[0].merchant) alone was more than the next two together.")
+            Text("The other \(restCount) payments averaged \(aed(restAverage)). \(top[0].merchant) alone was about \(timesAverage)× that, and more than the next two together.")
                 .font(.system(size: 14.5))
                 .foregroundStyle(Theme.text2)
                 .lineSpacing(3)
