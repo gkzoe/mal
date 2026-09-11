@@ -130,6 +130,17 @@ struct TopBarrier: View {
                 .animation(.easeInOut(duration: 0.8), value: thinking)
             }
             .clipped()
+            // Whatever the layers do, the band is fully transparent at its bottom edge.
+            .mask(
+                LinearGradient(
+                    stops: [
+                        .init(color: .black, location: 0),
+                        .init(color: .black, location: 0.3),
+                        .init(color: .clear, location: 1)
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+            )
         }
         .opacity(visible ? 1 : 0)
         .animation(.easeInOut(duration: 0.6), value: visible)
@@ -164,6 +175,17 @@ struct BottomBarrier: View {
                 startPoint: .top, endPoint: .bottom
             )
         }
+        // Same guarantee at the top edge of the bottom band.
+        .mask(
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black, location: 0.6),
+                    .init(color: .black, location: 1)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+        )
         .opacity(visible ? 1 : 0)
         .animation(.easeInOut(duration: 0.6), value: visible)
     }
