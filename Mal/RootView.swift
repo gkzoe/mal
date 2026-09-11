@@ -55,7 +55,7 @@ struct ChatScreen: View {
             .overlay {
                 VStack(spacing: 0) {
                     TopBarrier(visible: model.inChat, thinking: model.thinking)
-                        .frame(height: statusTop + 64 + 44)
+                        .frame(height: statusTop + 64 + 12)
                     Spacer(minLength: 0)
                     BottomBarrier(visible: model.inChat)
                         .frame(height: outer.safeAreaInsets.bottom + 78 + 40)
@@ -94,7 +94,7 @@ struct TopBarrier: View {
                         LinearGradient(
                             stops: [
                                 .init(color: .black, location: 0),
-                                .init(color: .black, location: 0.45),
+                                .init(color: .black, location: 0.35),
                                 .init(color: .clear, location: 1)
                             ],
                             startPoint: .top, endPoint: .bottom
@@ -104,7 +104,7 @@ struct TopBarrier: View {
                 LinearGradient(
                     stops: [
                         .init(color: Color(hex: 0x1E7A5A).opacity(0.3), location: 0),
-                        .init(color: Color(hex: 0x1E7A5A).opacity(0), location: 0.75)
+                        .init(color: Color(hex: 0x1E7A5A).opacity(0), location: 0.65)
                     ],
                     startPoint: .top, endPoint: .bottom
                 )
@@ -115,9 +115,9 @@ struct TopBarrier: View {
                         .init(color: Color(hex: 0x1B6B50).opacity(0.22), location: 0.5),
                         .init(color: .clear, location: 1)
                     ]),
-                    center: UnitPoint(x: 0.5, y: 0.1),
+                    center: UnitPoint(x: 0.5, y: 0.05),
                     startRadius: 0,
-                    endRadius: geo.size.width * 0.7
+                    endRadius: geo.size.width * 0.6
                 )
                 .frame(width: geo.size.width * 1.6, height: geo.size.height * 1.5)
                 .offset(
