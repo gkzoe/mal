@@ -53,3 +53,31 @@ extension View {
             .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(Color.white.opacity(0.05), lineWidth: 1))
     }
 }
+
+// MARK: - Liquid Glass (iOS 26) with a material fallback
+
+extension View {
+    /// Glass capsule for controls that float over content: chips, the composer.
+    @ViewBuilder
+    func glassCapsule(interactive: Bool = true) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(interactive ? Glass.regular.interactive() : Glass.regular, in: .capsule)
+        } else {
+            self
+                .background(Capsule().fill(.ultraThinMaterial))
+                .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+        }
+    }
+
+    /// Glass circle for the round icon buttons.
+    @ViewBuilder
+    func glassCircle() -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(Glass.regular.interactive(), in: .circle)
+        } else {
+            self
+                .background(Circle().fill(.ultraThinMaterial))
+                .overlay(Circle().stroke(Color.white.opacity(0.1), lineWidth: 1))
+        }
+    }
+}

@@ -2,11 +2,13 @@ import SwiftUI
 import UIKit
 import Observation
 
-/// Drives the scripted conversation. Everything here runs on the main actor
-/// because the views observe it directly.
+/// Drives the scripted conversation for one variation. Everything here runs
+/// on the main actor because the views observe it directly.
 @MainActor
 @Observable
 final class ChatModel {
+    let variant: Variant
+
     var messages: [Message] = []
     var input = ""
     var inChat = false
@@ -18,6 +20,10 @@ final class ChatModel {
     private var roundUpDismissed = false
     private var roundUpShown = false
     private var roundUpOn = false
+
+    init(variant: Variant) {
+        self.variant = variant
+    }
 
     // MARK: - User intents
 
@@ -65,6 +71,12 @@ final class ChatModel {
                 await overview(followUp.label)
             case .drill(let id):
                 await drill(SpendData.category(id), question: followUp.label)
+            case .whyLower:
+                await whyLower()
+            case .monthDetail:
+                await monthDetail()
+            case .merchant(let name):
+                await merchantDetail(SpendData.merchant(name), question: followUp.label)
             case .biggest:
                 await biggest()
             case .monthly:
@@ -76,6 +88,11 @@ final class ChatModel {
     func tapCategory(_ category: SpendCategory) {
         guard !busy else { return }
         Task { await drill(category, question: "Show me \(category.name.lowercased())") }
+    }
+
+    func tapMerchant(_ merchant: MerchantTotal) {
+        guard !busy else { return }
+        Task { await merchantDetail(merchant, question: "Show me \(merchant.name)") }
     }
 
     func toggleReasoning(_ id: UUID) {
@@ -194,9 +211,21 @@ final class ChatModel {
         }
     }
 
-    // MARK: - Flows
+    private var biggestFollowUp: FollowUp { FollowUp(label: "My biggest purchase", action: .biggest) }
+    private var monthlyFollowUp: FollowUp { FollowUp(label: "Send this every month", action: .monthly) }
+
+    // MARK: - Overview per variation
 
     private func overview(_ text: String) async {
+        switch variant {
+        case .categories: await overviewCategories(text)
+        case .trend: await overviewTrend(text)
+        case .merchants: await overviewMerchants(text)
+        }
+    }
+
+    /// Variation 1: August against July, by category.
+    private func overviewCategories(_ text: String) async {
         let id = await begin(text)
         await reason(id, title: "Looking into your spending", steps: [
             "Reading your August transactions",
@@ -209,15 +238,70 @@ final class ChatModel {
             TextSegment(aed(SpendData.total), bold: true),
             TextSegment(" in August, about "),
             TextSegment("\(abs(SpendData.deltaPercent))% less", bold: true),
-            TextSegment(" than July. Dining and transfers dropped the most. Shopping went up by almost a third, mostly down to one Noon order.")
+            TextSegment(" than July. Dining and transfers dropped the most. Shopping went up by almost a third, mostly down to one Ounass order.")
         ])
         await showCard(id, .insight)
         await finish(id, [
             FollowUp(label: "Why did shopping go up?", action: .drill("shopping")),
-            FollowUp(label: "My biggest purchase", action: .biggest),
-            FollowUp(label: "Send this every month", action: .monthly)
+            biggestFollowUp,
+            monthlyFollowUp
         ])
     }
+
+    /// Variation 2: August against the previous five months.
+    private func overviewTrend(_ text: String) async {
+        let id = await begin(text)
+        await reason(id, title: "Looking at your last six months", steps: [
+            "Reading transactions since March",
+            "Totalling each month",
+            "Comparing August with your usual month"
+        ])
+        let usual = SpendData.averageOfPreviousMonths
+        let gap = usual - SpendData.total
+        let percent = Int((Double(gap) / Double(usual) * 100).rounded())
+        await stream(id, [
+            TextSegment("You spent "),
+            TextSegment(aed(SpendData.total), bold: true),
+            TextSegment(" in August, your "),
+            TextSegment("lowest month since March", bold: true),
+            TextSegment(". That is \(aed(gap)) (\(percent)%) under your usual month of about \(aed(usual)). May was the high point, mostly the Eid trip.")
+        ])
+        await showCard(id, .trend)
+        await finish(id, [
+            FollowUp(label: "Why was August lower?", action: .whyLower),
+            FollowUp(label: "What happened in May?", action: .monthDetail),
+            biggestFollowUp,
+            monthlyFollowUp
+        ])
+    }
+
+    /// Variation 3: merchants ranked across categories.
+    private func overviewMerchants(_ text: String) async {
+        let id = await begin(text)
+        await reason(id, title: "Looking at where your money went", steps: [
+            "Reading your August transactions",
+            "Grouping \(SpendData.paymentCount) payments by merchant",
+            "Tagging each merchant's categories",
+            "Ranking by total"
+        ])
+        let top = SpendData.merchants
+        await stream(id, [
+            TextSegment("Your spending went to "),
+            TextSegment("\(top.count) merchants", bold: true),
+            TextSegment(" in August, not counting transfers. "),
+            TextSegment("\(top[0].name) took the most at \(aed(top[0].total))", bold: true),
+            TextSegment(", spread across rides, groceries and food orders. \(top[1].name) and \(top[2].name) were close behind, then \(top[3].name).")
+        ])
+        await showCard(id, .merchants)
+        await finish(id, [
+            FollowUp(label: "Show me \(top[0].name)", action: .merchant(top[0].name)),
+            FollowUp(label: "Show me \(top[1].name)", action: .merchant(top[1].name)),
+            biggestFollowUp,
+            monthlyFollowUp
+        ])
+    }
+
+    // MARK: - Drill-downs
 
     private func drill(_ c: SpendCategory, question: String) async {
         let id = await begin(question)
@@ -248,26 +332,111 @@ final class ChatModel {
         }
         let others = SpendData.categories.filter { $0.id != c.id }.prefix(2)
         var followUps = others.map { FollowUp(label: "Show me \($0.name.lowercased())", action: .drill($0.id)) }
-        followUps.append(FollowUp(label: "My biggest purchase", action: .biggest))
+        followUps.append(biggestFollowUp)
         await finish(id, followUps)
     }
 
+    private func whyLower() async {
+        let id = await begin("Why was August lower?")
+        await reason(id, title: "Comparing August with your usual month", steps: [
+            "Averaging each category over five months",
+            "Finding the biggest gaps"
+        ])
+        let dining = SpendData.category("dining")
+        let transfers = SpendData.category("transfers")
+        let fun = SpendData.category("entertainment")
+        await stream(id, [
+            TextSegment("Three things. "),
+            TextSegment("Dining was \(aed(abs(dining.vsAverage))) under", bold: true),
+            TextSegment(" your usual month, with fewer takeaway orders. Transfers were \(aed(abs(transfers.vsAverage))) lower because July's extra transfer did not repeat. And you went out less: entertainment was \(aed(abs(fun.vsAverage))) under.")
+        ])
+        await showCard(id, .deltaList)
+        await finish(id, [
+            FollowUp(label: "Show me dining", action: .drill("dining")),
+            FollowUp(label: "What happened in May?", action: .monthDetail),
+            biggestFollowUp
+        ])
+    }
+
+    private func monthDetail() async {
+        let id = await begin("What happened in May?")
+        await reason(id, title: "Looking at May", steps: [
+            "Reading May transactions",
+            "Finding what stood out"
+        ])
+        let may = SpendData.highestMonth
+        let over = may.total - SpendData.averageOfPreviousMonths
+        await stream(id, [
+            TextSegment("May came to "),
+            TextSegment(aed(may.total), bold: true),
+            TextSegment(", about \(aed(over)) over your usual month. Eid al-Adha fell at the end of May and most of the extra was the trip: flights and a hotel in Istanbul, gifts for the family, and a lot more dinners out.")
+        ])
+        await showCard(id, .monthDetail)
+        await finish(id, [
+            FollowUp(label: "Why was August lower?", action: .whyLower),
+            biggestFollowUp,
+            monthlyFollowUp
+        ])
+    }
+
+    private func merchantDetail(_ m: MerchantTotal, question: String) async {
+        let id = await begin(question)
+        await reason(id, title: "Looking at \(m.name)", steps: [
+            "Pulling \(m.count) \(m.name) payment\(m.count == 1 ? "" : "s")",
+            "Splitting by category",
+            "Comparing with July"
+        ])
+        let direction: String
+        if m.isNew {
+            direction = "new this month"
+        } else {
+            switch Direction(percent: m.deltaPercent) {
+            case .down: direction = "down \(abs(m.deltaPercent))% from July"
+            case .up: direction = "up \(m.deltaPercent)% on July"
+            case .flat: direction = "about the same as July"
+            }
+        }
+        let share = Int((m.share * 100).rounded())
+        let note = SpendData.merchantNotes[m.name] ?? ""
+        await stream(id, [
+            TextSegment("\(m.name) came to "),
+            TextSegment(aed(m.total), bold: true),
+            TextSegment(" across \(m.count) payment\(m.count == 1 ? "" : "s"), \(direction). That is \(share)% of your August spending. \(note)")
+        ])
+        await showCard(id, .merchant(m.name))
+        let others = SpendData.merchants.filter { $0.name != m.name }.prefix(2)
+        var followUps = others.map { FollowUp(label: "Show me \($0.name)", action: .merchant($0.name)) }
+        followUps.append(biggestFollowUp)
+        await finish(id, followUps)
+    }
+
+    // MARK: - Shared follow-ups
+
     private func biggest() async {
         let id = await begin("What was my biggest purchase?")
-        await reason(id, title: "Finding your largest payment", steps: [
+        await reason(id, title: "Finding your largest payments", steps: [
             "Scanning \(SpendData.paymentCount) August payments",
-            "Excluding transfers"
+            "Setting aside transfers and bills",
+            "Ranking by amount"
         ])
+        let top = SpendData.topPurchases
+        let share = Int((Double(top[0].amount) / Double(SpendData.total) * 100).rounded())
+        let multiple = Int(Double(top[0].amount) / Double(top[1].amount))
         await stream(id, [
             TextSegment("Your largest single purchase was "),
-            TextSegment("AED 899 at Noon", bold: true),
-            TextSegment(" on Friday 14 August. It is the main reason shopping was up on July.")
+            TextSegment("\(aed(top[0].amount)) at \(top[0].merchant)", bold: true),
+            TextSegment(" on \(top[0].longDate). That is about "),
+            TextSegment("\(share)% of everything", bold: true),
+            TextSegment(" you spent in August and more than \(multiple)× the next largest, \(aed(top[1].amount)) at \(top[1].merchant). Your typical payment was around \(aed(SpendData.typicalPayment)).")
         ])
-        await showCard(id, .receipt)
-        await finish(id, [
-            FollowUp(label: "Show me shopping", action: .drill("shopping")),
-            FollowUp(label: "Send this every month", action: .monthly)
-        ])
+        await showCard(id, .topPurchases)
+        let contextual: FollowUp
+        switch variant {
+        case .categories: contextual = FollowUp(label: "Show me shopping", action: .drill("shopping"))
+        case .trend: contextual = FollowUp(label: "Why was August lower?", action: .whyLower)
+        case .merchants: contextual = FollowUp(label: "Show me \(top[0].merchant)", action: .merchant(top[0].merchant))
+        }
+        await finish(id, [contextual, monthlyFollowUp])
     }
 
     private func monthly() async {
@@ -280,8 +449,8 @@ final class ChatModel {
         ])
         await showCard(id, .monthlyConfirm)
         await finish(id, [
-            FollowUp(label: "My biggest purchase", action: .biggest),
-            FollowUp(label: "Show me dining", action: .drill("dining"))
+            biggestFollowUp,
+            FollowUp(label: "Back to my spending", action: .overview)
         ])
     }
 
@@ -299,7 +468,7 @@ final class ChatModel {
         await showCard(id, .roundUpCTA)
         await finish(id, [
             FollowUp(label: "Back to my spending", action: .overview),
-            FollowUp(label: "Send this every month", action: .monthly)
+            monthlyFollowUp
         ])
     }
 
@@ -311,7 +480,7 @@ final class ChatModel {
         ])
         await finish(id, [
             FollowUp(label: "How was my spending last month?", action: .overview),
-            FollowUp(label: "My biggest purchase", action: .biggest)
+            biggestFollowUp
         ])
     }
 }

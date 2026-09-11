@@ -41,16 +41,18 @@ struct DeltaPill: View {
     var body: some View {
         let percent = percentChange(now, prev)
         let direction = Direction(percent: percent)
-        let label = direction == .flat ? "same" : "\(abs(percent))%"
-        Text("\(direction.arrow) \(label)")
+        let isNew = prev == 0
+        let label = isNew ? "new" : (direction == .flat ? "same" : "\(direction.arrow) \(abs(percent))%")
+        let tint = isNew ? Theme.lime : color(for: direction)
+        Text(label)
             .font(.system(size: 14, weight: .semibold))
             .monospacedDigit()
-            .foregroundStyle(color(for: direction))
+            .foregroundStyle(tint)
             .padding(.vertical, compact ? 0 : 5)
             .padding(.horizontal, compact ? 0 : 11)
             .background {
                 if !compact {
-                    Capsule().fill(color(for: direction).opacity(0.12))
+                    Capsule().fill(tint.opacity(0.12))
                 }
             }
     }
@@ -182,8 +184,8 @@ struct DrillCard: View {
     let category: SpendCategory
 
     var body: some View {
-        let top = category.merchants[0]
-        let maxAmount = category.merchants.map(\.amount).max() ?? 1
+        let top = category.lines[0]
+        let maxAmount = category.lines.map(\.amount).max() ?? 1
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Eyebrow("\(category.name) · August")
@@ -199,7 +201,7 @@ struct DrillCard: View {
             HStack(spacing: 12) {
                 StatTile(
                     label: "Top merchant",
-                    value: top.name,
+                    value: top.label,
                     detail: top.detail.isEmpty ? aed(top.amount) : "\(aed(top.amount)) · \(top.detail)"
                 )
                 StatTile(
@@ -210,10 +212,10 @@ struct DrillCard: View {
             }
             .padding(.top, 18)
             VStack(spacing: 12) {
-                ForEach(category.merchants) { merchant in
+                ForEach(category.lines) { merchant in
                     VStack(spacing: 7) {
                         HStack {
-                            Text(merchant.name)
+                            Text(merchant.label)
                                 .font(.system(size: 15.5))
                                 .foregroundStyle(Color(hex: 0xE3E7E5))
                             Spacer()
@@ -393,36 +395,6 @@ struct ConfirmCard: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardBackground(radius: 20)
-    }
-}
-
-struct ReceiptCard: View {
-    var body: some View {
-        HStack(spacing: 14) {
-            Text("noon")
-                .font(.system(size: 16, weight: .heavy))
-                .tracking(-0.5)
-                .foregroundStyle(Color(hex: 0x1A1A1A))
-                .frame(width: 44, height: 44)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0xF6E04A)))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Noon")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Theme.text)
-                Text("Fri 14 Aug · Shopping · Mal card ending 4021")
-                    .font(.system(size: 14.5))
-                    .foregroundStyle(Theme.text2)
-            }
-            Spacer()
-            Text("AED 899")
-                .font(.system(size: 19, weight: .bold))
-                .tracking(-0.5)
-                .monospacedDigit()
-                .foregroundStyle(Theme.text)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
         .cardBackground(radius: 20)
     }
 }

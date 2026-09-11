@@ -1,30 +1,67 @@
 import SwiftUI
 
+/// Picker first; tapping a variation opens its chat. The chat's back arrow returns here.
 struct RootView: View {
-    @State private var model = ChatModel()
-    @FocusState private var composerFocused: Bool
+    @State private var selected: Variant?
 
     var body: some View {
         ZStack {
-            Backdrop(active: model.inChat, thinking: model.thinking)
-            VStack(spacing: 0) {
-                TopBar(model: model)
-                ZStack {
-                    if model.inChat {
-                        ThreadView(model: model)
-                            .transition(.opacity)
-                    } else {
-                        HomeView(model: model)
-                            .transition(.opacity.combined(with: .offset(y: -12)))
-                    }
+            if let variant = selected {
+                ChatScreen(variant: variant) {
+                    withAnimation(.easeInOut(duration: 0.3)) { selected = nil }
                 }
-                .animation(.easeOut(duration: 0.35), value: model.inChat)
+                .id(variant)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            } else {
+                VariationMenu { variant in
+                    withAnimation(.easeInOut(duration: 0.3)) { selected = variant }
+                }
+                .transition(.opacity)
             }
+        }
+        .background {
+            Backdrop(active: false, thinking: false)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+// MARK: - Chat screen for one variation
+
+struct ChatScreen: View {
+    let variant: Variant
+    let onBack: () -> Void
+
+    @State private var model: ChatModel
+    @FocusState private var composerFocused: Bool
+
+    init(variant: Variant, onBack: @escaping () -> Void) {
+        self.variant = variant
+        self.onBack = onBack
+        _model = State(initialValue: ChatModel(variant: variant))
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TopBar(model: model, onBack: onBack)
+            ZStack {
+                if model.inChat {
+                    ThreadView(model: model)
+                        .transition(.opacity)
+                } else {
+                    HomeView(model: model)
+                        .transition(.opacity.combined(with: .offset(y: -12)))
+                }
+            }
+            .animation(.easeOut(duration: 0.35), value: model.inChat)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Composer(model: model, focused: $composerFocused)
         }
-        .background(Theme.bg.ignoresSafeArea())
+        .background {
+            Backdrop(active: model.inChat, thinking: model.thinking)
+                .ignoresSafeArea()
+        }
         .scrollDismissesKeyboard(.interactively)
     }
 }
@@ -68,8 +105,6 @@ struct Backdrop: View {
             }
             .allowsHitTesting(false)
         }
-        .ignoresSafeArea()
-        .clipped()
     }
 }
 
@@ -77,10 +112,11 @@ struct Backdrop: View {
 
 struct TopBar: View {
     let model: ChatModel
+    let onBack: () -> Void
 
     var body: some View {
         HStack {
-            CircleButton(system: "arrow.left") { model.reset() }
+            CircleButton(system: "arrow.left", action: onBack)
             Spacer()
             HStack(spacing: 10) {
                 if model.inChat {
@@ -106,14 +142,13 @@ struct CircleButton: View {
                 .font(.system(size: 19, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 48)
-                .background(Circle().fill(Color.white.opacity(0.07)))
-                .overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 1))
+                .glassCircle()
         }
         .buttonStyle(PressStyle())
     }
 }
 
-// MARK: - Home
+// MARK: - Home (greeting + suggested prompts)
 
 struct HomeView: View {
     let model: ChatModel
@@ -149,7 +184,7 @@ struct HomeView: View {
                             .foregroundStyle(Theme.text)
                             .padding(.vertical, 17)
                             .padding(.horizontal, 30)
-                            .background(Capsule().fill(Theme.surface2))
+                            .glassCapsule()
                     }
                     .buttonStyle(PressStyle())
                     .opacity(opacity(for: index))
@@ -174,9 +209,9 @@ struct HomeView: View {
     private func opacity(for index: Int) -> Double {
         switch abs(index - focusIndex) {
         case 0: return 1
-        case 1: return 0.55
-        case 2: return 0.22
-        default: return 0.1
+        case 1: return 0.6
+        case 2: return 0.3
+        default: return 0.18
         }
     }
 }
@@ -193,13 +228,13 @@ struct Composer: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            TextField("", text: $model.input, prompt: Text("Ask anything...").foregroundColor(Color(hex: 0x8A9290)))
+            TextField("", text: $model.input, prompt: Text("Ask anything...").foregroundColor(Color(hex: 0x9AA29F)))
                 .font(.system(size: 18.5))
                 .foregroundStyle(Theme.text)
                 .focused(focused)
                 .submitLabel(.send)
                 .onSubmit { model.send() }
-                .padding(.leading, 26)
+                .padding(.leading, 24)
             Image(systemName: "mic")
                 .font(.system(size: 20))
                 .foregroundStyle(Color(hex: 0xCFD5D2))
@@ -208,7 +243,7 @@ struct Composer: View {
                 if hasText { model.send() }
             } label: {
                 ZStack {
-                    Circle().fill(.white).frame(width: 46, height: 46)
+                    Circle().fill(.white).frame(width: 44, height: 44)
                     Image(systemName: hasText ? "arrow.up" : "waveform")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(Color(hex: 0x0C0F10))
@@ -218,16 +253,11 @@ struct Composer: View {
             .buttonStyle(PressStyle())
             .animation(.snappy(duration: 0.25), value: hasText)
         }
-        .padding(.trailing, 12)
-        .frame(height: 68)
-        .background(Capsule().fill(Theme.composer))
-        .overlay(Capsule().stroke(Color.white.opacity(0.06), lineWidth: 1))
+        .padding(.trailing, 10)
+        .frame(height: 64)
+        .glassCapsule(interactive: false)
         .padding(.horizontal, 20)
-        .padding(.top, 12)
+        .padding(.top, 8)
         .padding(.bottom, 6)
-        .background(
-            LinearGradient(colors: [Theme.bg.opacity(0), Theme.bg], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.35))
-                .ignoresSafeArea()
-        )
     }
 }

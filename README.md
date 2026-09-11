@@ -10,9 +10,20 @@ Two builds of the same flow live here:
 | `Mal.xcodeproj` + `Mal/` | Native SwiftUI iOS app (iOS 17+). Open in Xcode, run on your iPhone. |
 | `index.html` | Web version. Open in a browser, or add to the iPhone home screen from Safari. |
 
-Flow covered: home screen → user question → reasoning steps → one-sentence answer
-with a spending card → category drill-down → Round-Up Savings moment → monthly
-recap opt-in. All data is illustrative (August 2026 vs July 2026, AED).
+The iOS app opens on a picker with three variations of the same answer. The back
+arrow in the chat returns to the picker.
+
+1. **Categories vs last month**: August against July, category by category, with
+   drill-downs and the Round-Up Savings moment.
+2. **Six-month trend**: August against the previous five months as a bar chart,
+   with "Why was August lower?" and "What happened in May?" follow-ups.
+3. **Where the money went**: merchants ranked by spend and tagged with every
+   category they touch (Careem spans transport, groceries and dining).
+
+All variations share the "My biggest purchase" follow-up (top three purchases
+with share of the month) and the monthly recap opt-in. Controls use Liquid Glass
+on iOS 26 and a translucent material on iOS 17 and 18. The web version only
+covers variation 1. All data is illustrative (March to August 2026, AED).
 
 ## Run the iOS app on your iPhone
 

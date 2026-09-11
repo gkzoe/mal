@@ -80,8 +80,18 @@ struct MessageView: View {
             InsightCard { model.tapCategory($0) }
         case .drill(let id):
             DrillCard(category: SpendData.category(id))
-        case .receipt:
-            ReceiptCard()
+        case .trend:
+            TrendCard()
+        case .deltaList:
+            DeltaListCard { model.tapCategory($0) }
+        case .monthDetail:
+            MonthDetailCard()
+        case .merchants:
+            MerchantsCard { model.tapMerchant($0) }
+        case .merchant(let name):
+            MerchantDetailCard(merchant: SpendData.merchant(name))
+        case .topPurchases:
+            TopPurchasesCard()
         case .monthlyConfirm:
             ConfirmCard(title: "Monthly recap is on", subtitle: "Next: Thu 1 Oct, 9:00am · Change anytime in Settings")
         case .roundUpCTA:
@@ -251,8 +261,7 @@ struct FollowUpChips: View {
                             .foregroundStyle(Color(hex: 0xDFE4E1))
                             .padding(.vertical, 12)
                             .padding(.horizontal, 18)
-                            .background(Capsule().fill(Color.white.opacity(0.03)))
-                            .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+                            .glassCapsule()
                     }
                     .buttonStyle(PressStyle())
                 }
