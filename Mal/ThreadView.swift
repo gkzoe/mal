@@ -53,6 +53,8 @@ struct MessageView: View {
                     .padding(.vertical, 15)
                     .padding(.horizontal, 22)
                     .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Theme.bubble))
+                    .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .contextMenu { PinMenu(prompt: message.userText, pins: PinStore.shared) }
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
         case .assistant:

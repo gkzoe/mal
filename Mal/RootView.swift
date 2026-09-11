@@ -265,17 +265,23 @@ struct CircleButton: View {
 
 struct HomeView: View {
     let model: ChatModel
+    private let pins = PinStore.shared
 
     @State private var focusIndex = 0
-    private let recurringIndex = 0
 
-    private let chips = [
-        "How was my spending last month",
+    private let defaults = [
         "What can Mal do for me",
+        "How was my spending last month",
         "What are the fees",
         "Which countries are supported",
         "How do I open an account"
     ]
+
+    /// Pinned prompt first, then the defaults in their usual order.
+    private var chips: [String] {
+        guard let pinned = pins.pinned else { return defaults }
+        return [pinned] + defaults.filter { PinStore.normalize($0) != pinned }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -289,15 +295,15 @@ struct HomeView: View {
                 .foregroundStyle(Theme.text2)
                 .padding(.top, 10)
             VStack(spacing: 10) {
-                ForEach(Array(chips.enumerated()), id: \.offset) { index, chip in
+                ForEach(Array(chips.enumerated()), id: \.element) { index, chip in
+                    let isPinned = pins.isPinned(chip)
                     Button {
                         model.ask(chip + "?")
                     } label: {
                         HStack(spacing: 10) {
-                            // Recurring prompt: the recap is something you ask every month.
-                            if index == recurringIndex {
-                                Image(systemName: "clock.arrow.circlepath")
-                                    .font(.system(size: 14, weight: .medium))
+                            if isPinned {
+                                Image(systemName: "pin.fill")
+                                    .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(Theme.lime)
                             }
                             Text(chip)
@@ -305,15 +311,17 @@ struct HomeView: View {
                                 .foregroundStyle(Theme.text)
                         }
                         .padding(.vertical, 14)
-                        .padding(.leading, index == recurringIndex ? 18 : 24)
+                        .padding(.leading, isPinned ? 18 : 24)
                         .padding(.trailing, 24)
                         .glassCapsule()
                     }
                     .buttonStyle(PressStyle())
+                    .contextMenu { PinMenu(prompt: chip, pins: pins) }
                     .opacity(opacity(for: index))
                 }
             }
             .padding(.top, 56)
+            .animation(.snappy(duration: 0.4), value: pins.pinned)
             Spacer()
             Spacer()
         }
