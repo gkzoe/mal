@@ -28,6 +28,13 @@ final class ChatModel {
         route(text)
     }
 
+    /// Sends a suggested prompt straight away, as if the user typed and hit send.
+    func ask(_ text: String) {
+        guard !busy else { return }
+        input = ""
+        route(text)
+    }
+
     func reset() {
         withAnimation(.easeOut(duration: 0.3)) {
             messages.removeAll()

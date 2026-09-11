@@ -14,7 +14,7 @@ struct RootView: View {
                         ThreadView(model: model)
                             .transition(.opacity)
                     } else {
-                        HomeView(model: model, focus: $composerFocused)
+                        HomeView(model: model)
                             .transition(.opacity.combined(with: .offset(y: -12)))
                     }
                 }
@@ -50,16 +50,21 @@ struct Backdrop: View {
             GeometryReader { geo in
                 ZStack {
                     Text("مال")
-                        .font(.system(size: 520, weight: .bold, design: .serif))
+                        .font(.system(size: 380, weight: .bold, design: .serif))
+                        .fixedSize()
                         .rotationEffect(.degrees(-8))
-                        .position(x: geo.size.width + 40, y: 260)
+                        .position(x: geo.size.width + 20, y: 220)
                     Text("مال")
-                        .font(.system(size: 460, weight: .bold, design: .serif))
+                        .font(.system(size: 340, weight: .bold, design: .serif))
+                        .fixedSize()
                         .rotationEffect(.degrees(6))
-                        .position(x: -20, y: geo.size.height - 220)
+                        .position(x: 0, y: geo.size.height - 200)
                 }
-                .foregroundStyle(Color(hex: 0xDCF0D2).opacity(0.045))
-                .blur(radius: 1.5)
+                .foregroundStyle(Color(hex: 0xDCF0D2).opacity(0.05))
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
+                // Flatten to a single screen-sized texture once; no live blur.
+                .drawingGroup()
             }
             .allowsHitTesting(false)
         }
@@ -112,7 +117,6 @@ struct CircleButton: View {
 
 struct HomeView: View {
     let model: ChatModel
-    var focus: FocusState<Bool>.Binding
 
     @State private var focusIndex = 1
 
@@ -138,8 +142,7 @@ struct HomeView: View {
             VStack(spacing: 12) {
                 ForEach(Array(chips.enumerated()), id: \.offset) { index, chip in
                     Button {
-                        model.input = chip + "?"
-                        focus.wrappedValue = true
+                        model.ask(chip + "?")
                     } label: {
                         Text(chip)
                             .font(.system(size: 18))
