@@ -16,12 +16,12 @@ struct RootView: View {
                 VariationMenu { variant in
                     withAnimation(.easeInOut(duration: 0.3)) { selected = variant }
                 }
+                .background {
+                    Backdrop(active: false, thinking: false)
+                        .ignoresSafeArea()
+                }
                 .transition(.opacity)
             }
-        }
-        .background {
-            Backdrop(active: false, thinking: false)
-                .ignoresSafeArea()
         }
     }
 }
@@ -72,17 +72,23 @@ struct Backdrop: View {
     let active: Bool
     let thinking: Bool
 
-    private var glow: Double { thinking ? 0.62 : (active ? 0.45 : 0.28) }
+    private var glow: Double { thinking ? 0.4 : (active ? 0.26 : 0.16) }
 
     var body: some View {
         ZStack {
             Theme.bg
+            // Soft ellipse fading out well above the first card; never a band.
             RadialGradient(
-                colors: [Color(hex: 0x125C48).opacity(glow), .clear],
-                center: UnitPoint(x: 0.5, y: -0.1),
+                gradient: Gradient(stops: [
+                    .init(color: Color(hex: 0x125C48).opacity(glow), location: 0),
+                    .init(color: Color(hex: 0x125C48).opacity(glow * 0.35), location: 0.45),
+                    .init(color: .clear, location: 1)
+                ]),
+                center: UnitPoint(x: 0.5, y: -0.2),
                 startRadius: 0,
-                endRadius: 460
+                endRadius: 520
             )
+            .scaleEffect(x: 1.5, y: 1, anchor: .top)
             .animation(.easeInOut(duration: 1.2), value: glow)
             GeometryReader { geo in
                 ZStack {
