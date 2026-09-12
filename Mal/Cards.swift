@@ -356,21 +356,25 @@ struct RoundUpAside: View {
     var body: some View {
         Group {
             if let artwork = UIImage(named: "RoundUpCallout") {
-                // Designed artwork (jar + background, no text) with live text over the right side.
-                HStack(spacing: 0) {
-                    Color.clear.frame(width: 108)
-                    textBlock
-                        .padding(.vertical, 16)
-                        .padding(.trailing, 16)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                // Anchor the artwork to the leading edge so the jar is never cropped away.
-                .background(alignment: .leading) {
-                    Image(uiImage: artwork)
-                        .resizable()
-                        .scaledToFill()
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                // Designed artwork (jar + background, no text). The card takes the
+                // artwork's own proportions; live text sits over the right side.
+                Color.clear
+                    .aspectRatio(artwork.size.width / max(1, artwork.size.height), contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        Image(uiImage: artwork)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .overlay(alignment: .leading) {
+                        HStack(spacing: 0) {
+                            Color.clear.frame(width: 108)
+                            textBlock
+                                .padding(.vertical, 12)
+                                .padding(.trailing, 16)
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.white.opacity(0.06), lineWidth: 1))
             } else {
                 // Fallback until the artwork is added to Assets.xcassets/RoundUpCallout.
