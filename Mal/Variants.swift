@@ -80,16 +80,10 @@ struct VariantRow: View {
             VariantGlyph(variant: variant)
                 .frame(width: 64, height: 64)
                 .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(0.05)))
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text(variant.number)
-                        .font(.system(size: 12, weight: .bold))
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.lime)
-                    Text(variant.title)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Theme.text)
-                }
+            VStack(alignment: .leading, spacing: 5) {
+                Text(variant.title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.text)
                 Text(variant.subtitle)
                     .font(.system(size: 14.5))
                     .foregroundStyle(Theme.text2)
