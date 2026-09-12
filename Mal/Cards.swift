@@ -310,30 +310,24 @@ struct RoundUpAside: View {
         switch scope {
         case .category(let id):
             let category = SpendData.category(id)
-            lead = Text("Your \(category.count) \(category.name.lowercased()) payments left \(aed(category.spare)) in spare change. ")
+            lead = Text("\(category.name) left \(aed(category.spare)) in spare change last month. ")
         case .month:
-            lead = Text("Your \(SpendData.cardCount) card payments in August left \(aed(SpendData.spareTotal)) in spare change. ")
+            lead = Text("Your card left \(aed(SpendData.spareTotal)) in spare change last month. ")
         }
         return lead
-            + Text("Set your change aside automatically").fontWeight(.semibold).foregroundColor(.white)
-            + Text(" and save up roughly ")
+            + Text("Set it aside automatically").fontWeight(.semibold).foregroundColor(.white)
+            + Text(" and save about ")
             + Text(aed(yearly)).fontWeight(.semibold).foregroundColor(.white)
-            + Text(" a year, without changing anything you do.")
+            + Text(" a year.")
     }
 
     /// Title, copy and the two text buttons; shared by both layouts.
     private var textBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Put your spare change in a jar")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.text)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .padding(.bottom, 2)
             copy
-                .font(.system(size: 13.5))
-                .foregroundStyle(Color(hex: 0xB9C1BD))
-                .lineSpacing(2)
+                .font(.system(size: 14.5))
+                .foregroundStyle(Color(hex: 0xC3CAC6))
+                .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 20) {
                 Button(action: onLearn) {
