@@ -306,35 +306,34 @@ struct RoundUpAside: View {
 
     private var copy: Text {
         let yearly = Int((SpendData.spareTotal * 12).rounded())
+        let lead: Text
         switch scope {
         case .category(let id):
             let category = SpendData.category(id)
-            return Text("\(category.count) \(category.name.lowercased()) payments left ")
-                + Text(aed(category.spare)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" behind. Round them up and save about ")
-                + Text(aed(yearly)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" a year.")
+            lead = Text("Your \(category.count) \(category.name.lowercased()) payments left \(aed(category.spare)) in spare change. ")
         case .month:
-            return Text("\(SpendData.cardCount) card payments left ")
-                + Text(aed(SpendData.spareTotal)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" behind last month. Round them up and save about ")
-                + Text(aed(yearly)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" a year.")
+            lead = Text("Your \(SpendData.cardCount) card payments in August left \(aed(SpendData.spareTotal)) in spare change. ")
         }
+        return lead
+            + Text("Set your change aside automatically").fontWeight(.semibold).foregroundColor(.white)
+            + Text(" and save up roughly ")
+            + Text(aed(yearly)).fontWeight(.semibold).foregroundColor(.white)
+            + Text(" a year, without changing anything you do.")
     }
 
     /// Title, copy and the two text buttons; shared by both layouts.
     private var textBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Put your spare change in a jar")
-                .font(.system(size: 15.5, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.text)
                 .lineLimit(1)
-                .minimumScaleFactor(0.9)
+                .minimumScaleFactor(0.85)
+                .padding(.bottom, 2)
             copy
-                .font(.system(size: 14))
-                .foregroundStyle(Color(hex: 0xC9D0CD))
-                .lineSpacing(2.5)
+                .font(.system(size: 13.5))
+                .foregroundStyle(Color(hex: 0xB9C1BD))
+                .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 20) {
                 Button(action: onLearn) {
@@ -366,13 +365,14 @@ struct RoundUpAside: View {
                             .resizable()
                             .scaledToFill()
                     }
-                    .overlay(alignment: .leading) {
-                        HStack(spacing: 0) {
-                            Color.clear.frame(width: 108)
-                            textBlock
-                                .padding(.top, 34)      // sits a little lower than centre
-                                .padding(.bottom, 12)
-                                .padding(.trailing, 16)
+                    .overlay {
+                        GeometryReader { geo in
+                            HStack(spacing: 0) {
+                                Color.clear.frame(width: geo.size.width * 0.32)
+                                textBlock
+                                    .padding(.trailing, 14)
+                                    .frame(maxHeight: .infinity)   // vertically centred in the card
+                            }
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
