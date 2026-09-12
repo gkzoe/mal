@@ -370,12 +370,12 @@ struct RoundUpAside: View {
                         HStack(spacing: 0) {
                             Color.clear.frame(width: 108)
                             textBlock
-                                .padding(.vertical, 12)
+                                .padding(.top, 26)      // sits a little lower than centre
+                                .padding(.bottom, 12)
                                 .padding(.trailing, 16)
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.white.opacity(0.06), lineWidth: 1))
             } else {
                 // Fallback until the artwork is added to Assets.xcassets/RoundUpCallout.
                 HStack(alignment: .top, spacing: 14) {
