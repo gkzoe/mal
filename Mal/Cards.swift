@@ -370,7 +370,7 @@ struct RoundUpAside: View {
                         HStack(spacing: 0) {
                             Color.clear.frame(width: 108)
                             textBlock
-                                .padding(.top, 26)      // sits a little lower than centre
+                                .padding(.top, 34)      // sits a little lower than centre
                                 .padding(.bottom, 12)
                                 .padding(.trailing, 16)
                         }
