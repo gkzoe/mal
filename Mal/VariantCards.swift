@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Variation 2: six-month trend
 
 struct TrendCard: View {
+    var compact = false
     var fillHeight = false
     @State private var grown = false
 
@@ -20,9 +21,10 @@ struct TrendCard: View {
             }
             BigAmount(SpendData.total)
                 .padding(.top, 10)
-            Text("August · your usual month is about \(aed(usual))")
+            Text(compact ? "Usual month about \(aed(usual))" : "August · your usual month is about \(aed(usual))")
                 .font(.system(size: 15))
                 .foregroundStyle(Theme.text2)
+                .lineLimit(1)
                 .padding(.top, 8)
 
             GeometryReader { geo in
@@ -210,9 +212,10 @@ struct MerchantsCard: View {
             }
             BigAmount(SpendData.total)
                 .padding(.top, 10)
-            Text("\(merchants.count) merchants · \(SpendData.paymentCount) payments · transfers excluded")
+            Text(compact ? "\(merchants.count) merchants · transfers excluded" : "\(merchants.count) merchants · \(SpendData.paymentCount) payments · transfers excluded")
                 .font(.system(size: 15))
                 .foregroundStyle(Theme.text2)
+                .lineLimit(1)
                 .padding(.top, 8)
                 .padding(.bottom, 14)
             ForEach(Array(visible.enumerated()), id: \.element.id) { index, merchant in
@@ -410,14 +413,18 @@ struct WidgetRail: View {
     /// Tallest natural card height; every card is then stretched to it.
     @State private var railHeight: CGFloat?
 
-    private let labels = ["By category", "Six months", "By merchant"]
+    private let segments = ["Categories", "Monthly", "Merchants"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            RailSegmentedControl(items: segments, selection: Binding(
+                get: { page ?? 0 },
+                set: { newValue in withAnimation(.snappy(duration: 0.35)) { page = newValue } }
+            ))
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 12) {
                     railItem(0) { InsightCard(compact: true, fillHeight: railHeight != nil) { onCategory($0) } }
-                    railItem(1) { TrendCard(fillHeight: railHeight != nil) }
+                    railItem(1) { TrendCard(compact: true, fillHeight: railHeight != nil) }
                     railItem(2) { MerchantsCard(compact: true, fillHeight: railHeight != nil) { onMerchant($0) } }
                 }
                 .scrollTargetLayout()
@@ -425,8 +432,7 @@ struct WidgetRail: View {
             .scrollTargetBehavior(.viewAligned)
             .scrollPosition(id: $page)
             .scrollIndicators(.hidden)
-            .contentMargins(.horizontal, 20, for: .scrollContent)
-            .padding(.horizontal, -20)   // bleed to the screen edges
+            .scrollClipDisabled()
             .onPreferenceChange(RailHeightKey.self) { measured in
                 if measured > (railHeight ?? 0) { railHeight = measured }
             }
@@ -443,23 +449,51 @@ struct WidgetRail: View {
         }
     }
 
+    /// Each card takes the rail's full width, so nothing wraps that would not wrap in its own variation.
     private func railItem<Content: View>(_ index: Int, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(labels[index])
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(index == (page ?? 0) ? Theme.lime : Theme.text3)
-                .padding(.leading, 4)
-                .animation(.easeInOut(duration: 0.25), value: page)
-            content()
-        }
-        .frame(height: railHeight, alignment: .top)
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(key: RailHeightKey.self, value: geo.size.height)
+        content()
+            .frame(height: railHeight, alignment: .top)
+            .background(
+                GeometryReader { geo in
+                    Color.clear.preference(key: RailHeightKey.self, value: geo.size.height)
+                }
+            )
+            .containerRelativeFrame(.horizontal)
+            .id(index)
+    }
+}
+
+/// Liquid Glass segmented control with a sliding thumb.
+struct RailSegmentedControl: View {
+    let items: [String]
+    @Binding var selection: Int
+    @Namespace private var thumb
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                Button {
+                    withAnimation(.snappy(duration: 0.3)) { selection = index }
+                } label: {
+                    Text(item)
+                        .font(.system(size: 14, weight: selection == index ? .semibold : .medium))
+                        .foregroundStyle(selection == index ? Color(hex: 0x0B1409) : Theme.text2)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background {
+                            if selection == index {
+                                Capsule()
+                                    .fill(Theme.lime)
+                                    .matchedGeometryEffect(id: "thumb", in: thumb)
+                            }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
-        )
-        .containerRelativeFrame(.horizontal) { width, _ in width - 56 }
-        .id(index)
+        }
+        .padding(3)
+        .glassCapsule(interactive: false)
     }
 }
 
