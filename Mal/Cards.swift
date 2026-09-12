@@ -305,21 +305,21 @@ struct RoundUpAside: View {
     let onDismiss: () -> Void
 
     private var copy: Text {
+        let yearly = Int((SpendData.spareTotal * 12).rounded())
         switch scope {
         case .category(let id):
             let category = SpendData.category(id)
-            return Text("Your \(category.count) \(category.name.lowercased()) payments left ")
+            return Text("\(category.count) \(category.name.lowercased()) payments left ")
                 + Text(aed(category.spare)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" in spare change. Round-Up Savings would have set that aside on its own, about ")
-                + Text(aed(SpendData.spareTotal)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" a month across your card.")
-        case .month:
-            let yearly = Int((SpendData.spareTotal * 12).rounded())
-            return Text("Your \(SpendData.cardCount) card payments in August left ")
-                + Text(aed(SpendData.spareTotal)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" in spare change. Round-Up Savings would have set that aside on its own, roughly ")
+                + Text(" behind. Round them up and save about ")
                 + Text(aed(yearly)).fontWeight(.semibold).foregroundColor(.white)
-                + Text(" a year, without changing anything you do.")
+                + Text(" a year.")
+        case .month:
+            return Text("\(SpendData.cardCount) card payments left ")
+                + Text(aed(SpendData.spareTotal)).fontWeight(.semibold).foregroundColor(.white)
+                + Text(" behind last month. Round them up and save about ")
+                + Text(aed(yearly)).fontWeight(.semibold).foregroundColor(.white)
+                + Text(" a year.")
         }
     }
 
@@ -327,12 +327,14 @@ struct RoundUpAside: View {
     private var textBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Put your spare change in a jar")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 15.5, weight: .semibold))
                 .foregroundStyle(Theme.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
             copy
-                .font(.system(size: 14.5))
+                .font(.system(size: 14))
                 .foregroundStyle(Color(hex: 0xC9D0CD))
-                .lineSpacing(3)
+                .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 20) {
                 Button(action: onLearn) {
@@ -356,17 +358,18 @@ struct RoundUpAside: View {
             if let artwork = UIImage(named: "RoundUpCallout") {
                 // Designed artwork (jar + background, no text) with live text over the right side.
                 HStack(spacing: 0) {
-                    Color.clear.frame(width: 128)
+                    Color.clear.frame(width: 108)
                     textBlock
-                        .padding(.vertical, 18)
-                        .padding(.trailing, 18)
+                        .padding(.vertical, 16)
+                        .padding(.trailing, 16)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
+                // Anchor the artwork to the leading edge so the jar is never cropped away.
+                .background(alignment: .leading) {
                     Image(uiImage: artwork)
                         .resizable()
                         .scaledToFill()
-                )
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.white.opacity(0.06), lineWidth: 1))
             } else {
