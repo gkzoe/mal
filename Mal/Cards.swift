@@ -323,48 +323,74 @@ struct RoundUpAside: View {
         }
     }
 
-    var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            JarIcon()
-                .frame(width: 36, height: 36)
-                .background(Circle().fill(Theme.lime.opacity(0.14)))
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Put your spare change in a jar")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Theme.text)
-                copy
-                    .font(.system(size: 14.5))
-                    .foregroundStyle(Color(hex: 0xC9D0CD))
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 20) {
-                    Button(action: onLearn) {
-                        Text("See how it works")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Theme.lime)
-                    }
-                    Button(action: onDismiss) {
-                        Text("Not now")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Theme.text3)
-                    }
+    /// Title, copy and the two text buttons; shared by both layouts.
+    private var textBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Put your spare change in a jar")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Theme.text)
+            copy
+                .font(.system(size: 14.5))
+                .foregroundStyle(Color(hex: 0xC9D0CD))
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 20) {
+                Button(action: onLearn) {
+                    Text("See how it works")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.lime)
                 }
-                .buttonStyle(PressStyle())
-                .padding(.top, 6)
+                Button(action: onDismiss) {
+                    Text("Not now")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.text3)
+                }
             }
-            .padding(.top, 2)
+            .buttonStyle(PressStyle())
+            .padding(.top, 6)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 16)
-        .padding(.bottom, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(LinearGradient(
-                    colors: [Theme.lime.opacity(0.07), Theme.green.opacity(0.05)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.lime.opacity(0.12), lineWidth: 1))
+    }
+
+    var body: some View {
+        Group {
+            if let artwork = UIImage(named: "RoundUpCallout") {
+                // Designed artwork (jar + background, no text) with live text over the right side.
+                HStack(spacing: 0) {
+                    Color.clear.frame(width: 128)
+                    textBlock
+                        .padding(.vertical, 18)
+                        .padding(.trailing, 18)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    Image(uiImage: artwork)
+                        .resizable()
+                        .scaledToFill()
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.white.opacity(0.06), lineWidth: 1))
+            } else {
+                // Fallback until the artwork is added to Assets.xcassets/RoundUpCallout.
+                HStack(alignment: .top, spacing: 14) {
+                    JarIcon()
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Theme.lime.opacity(0.14)))
+                    textBlock
+                        .padding(.top, 2)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 16)
+                .padding(.bottom, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(LinearGradient(
+                            colors: [Theme.lime.opacity(0.07), Theme.green.opacity(0.05)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ))
+                )
+                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.lime.opacity(0.12), lineWidth: 1))
+            }
+        }
         .transition(.scale(scale: 0.98).combined(with: .opacity))
     }
 }
