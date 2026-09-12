@@ -250,14 +250,6 @@ final class ChatModel {
             TextSegment(" and \(aed(gap)) under your usual month. Dining and transfers dropped the most, and Careem was your biggest merchant once rides, groceries and food are added up. Swipe for each view.")
         ])
         await showCard(id, .rail)
-        // Cross-sell: the whole month's spare change, right after the recap.
-        if !roundUpDismissed && !roundUpOn {
-            await pause(700)
-            roundUpShown = true
-            withAnimation(.spring(duration: 0.5)) {
-                update(id) { $0.roundUp = .month }
-            }
-        }
         await finish(id, [
             FollowUp(label: "Why did shopping go up?", action: .drill("shopping")),
             FollowUp(label: "Why was August lower?", action: .whyLower),
@@ -284,6 +276,14 @@ final class ChatModel {
             TextSegment(" than July. Dining and transfers dropped the most. Shopping went up by almost a third, mostly down to one Ounass order.")
         ])
         await showCard(id, .insight)
+        // Cross-sell: the whole month's spare change, right after the recap.
+        if !roundUpDismissed && !roundUpOn {
+            await pause(700)
+            roundUpShown = true
+            withAnimation(.spring(duration: 0.5)) {
+                update(id) { $0.roundUp = .month }
+            }
+        }
         await finish(id, [
             FollowUp(label: "Why did shopping go up?", action: .drill("shopping")),
             biggestFollowUp,
