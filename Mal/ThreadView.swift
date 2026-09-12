@@ -1,0 +1,309 @@
+import SwiftUI
+
+struct ThreadView: View {
+    let model: ChatModel
+
+    var body: some View {
+        GeometryReader { geo in
+            // Status bar plus the floating top bar. Content starts below it and
+            // scrolls up underneath the barrier.
+            let barBottom = geo.safeAreaInsets.top
+            ScrollViewReader { proxy in
+                thread(topPadding: barBottom + 16)
+                    .ignoresSafeArea(edges: .top)
+                    .onChange(of: model.revision) { _, _ in scrollToBottom(proxy) }
+            }
+        }
+    }
+
+    private func thread(topPadding: CGFloat) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                ForEach(model.messages) { message in
+                    MessageView(message: message, model: model)
+                }
+                Color.clear.frame(height: 1).id("bottom")
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, topPadding)
+            .padding(.bottom, 12)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        withAnimation(.easeOut(duration: 0.3)) {
+            proxy.scrollTo("bottom", anchor: .bottom)
+        }
+    }
+}
+
+struct MessageView: View {
+    let message: Message
+    let model: ChatModel
+
+    var body: some View {
+        switch message.role {
+        case .user:
+            HStack {
+                Spacer(minLength: 60)
+                Text(message.userText)
+                    .font(.system(size: 18))
+                    .foregroundStyle(Theme.text)
+                    .padding(.vertical, 15)
+                    .padding(.horizontal, 22)
+                    .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Theme.bubble))
+                    .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .contextMenu { PinMenu(prompt: message.userText, pins: PinStore.shared) }
+            }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        case .assistant:
+            VStack(alignment: .leading, spacing: 16) {
+                if let reasoning = message.reasoning {
+                    ReasoningCard(reasoning: reasoning) { model.toggleReasoning(message.id) }
+                }
+                if message.visibleWords > 0 {
+                    StreamedText(segments: message.segments, visible: message.visibleWords)
+                }
+                if let card = message.card {
+                    cardView(card)
+                }
+                if let scope = message.roundUp {
+                    RoundUpAside(
+                        scope: scope,
+                        onLearn: { model.explainRoundUp() },
+                        onDismiss: { model.dismissRoundUp(message.id) }
+                    )
+                }
+                if message.showActions {
+                    ActionRow()
+                }
+                if !message.followUps.isEmpty {
+                    FollowUpChips(items: message.followUps) { model.perform($0) }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder
+    private func cardView(_ card: CardKind) -> some View {
+        switch card {
+        case .insight:
+            InsightCard { model.tapCategory($0) }
+        case .drill(let id):
+            DrillCard(category: SpendData.category(id))
+        case .trend:
+            TrendCard()
+        case .deltaList:
+            DeltaListCard { model.tapCategory($0) }
+        case .monthDetail:
+            MonthDetailCard()
+        case .merchants:
+            MerchantsCard { model.tapMerchant($0) }
+        case .merchant(let name):
+            MerchantDetailCard(merchant: SpendData.merchant(name))
+        case .rail:
+            WidgetRail(onCategory: { model.tapCategory($0) }, onMerchant: { model.tapMerchant($0) })
+        case .topPurchases:
+            TopPurchasesCard()
+        case .monthlyConfirm:
+            ConfirmCard(
+                icon: "bell.badge",
+                title: "Monthly recap is on",
+                subtitle: "You'll get a push notification on the 1st of every month. Next one: Thu 1 Oct, 9:00am.",
+                linkTitle: "Change anytime in Settings"
+            )
+        case .roundUpCTA:
+            CTAButton(title: "Turn on Round-Up") { model.turnOnRoundUp(message.id) }
+        case .roundUpConfirm:
+            ConfirmCard(title: "Round-Up is on", subtitle: "Your first round-up lands with your next card payment.")
+        }
+    }
+}
+
+// MARK: - Streamed assistant text
+
+struct StreamedText: View {
+    let segments: [TextSegment]
+    let visible: Int
+
+    var body: some View {
+        rendered
+            .font(.system(size: 18.5))
+            .foregroundStyle(Color(hex: 0xEEF1EF))
+            .lineSpacing(5)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Reveals `visible` words across the segments, keeping bold runs intact.
+    private var rendered: Text {
+        var remaining = visible
+        var output = Text("")
+        for segment in segments {
+            let parts = segment.text.components(separatedBy: " ")
+            var kept: [String] = []
+            var stop = false
+            for part in parts {
+                if part.isEmpty { kept.append(part); continue }
+                if remaining == 0 { stop = true; break }
+                kept.append(part)
+                remaining -= 1
+            }
+            let piece = Text(kept.joined(separator: " "))
+            output = output + (segment.bold ? piece.fontWeight(.semibold).foregroundColor(.white) : piece)
+            if stop { break }
+        }
+        return output
+    }
+}
+
+// MARK: - Reasoning
+
+struct ReasoningCard: View {
+    let reasoning: Reasoning
+    let toggle: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: toggle) {
+                HStack(spacing: 12) {
+                    if reasoning.finished {
+                        HStack(spacing: 10) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Theme.green)
+                            Text("\(reasoning.steps.count) check\(reasoning.steps.count == 1 ? "" : "s") complete")
+                                .font(.system(size: 15.5))
+                                .foregroundStyle(Color(hex: 0xC9D0CD))
+                        }
+                    } else {
+                        Text(reasoning.title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(Color(hex: 0xC9D0CD))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    Spacer(minLength: 8)
+                    HStack(spacing: 10) {
+                        if !reasoning.finished {
+                            Text("\(reasoning.completed) step\(reasoning.completed == 1 ? "" : "s") taken")
+                                .font(.system(size: 15))
+                                .foregroundStyle(Color(hex: 0xB3BAB7))
+                                .contentTransition(.numericText())
+                                .lineLimit(1)
+                                .fixedSize()
+                        }
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color(hex: 0xAAB1AE))
+                            .rotationEffect(.degrees(reasoning.expanded ? 180 : 0))
+                    }
+                }
+                .padding(.vertical, 13)
+                .padding(.horizontal, 18)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if reasoning.expanded {
+                VStack(alignment: .leading, spacing: 0) {
+                    Divider().overlay(Theme.line)
+                    ForEach(0..<reasoning.revealed, id: \.self) { index in
+                        HStack(spacing: 10) {
+                            ZStack {
+                                if index < reasoning.completed {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Theme.green)
+                                        .transition(.scale(scale: 0.4).combined(with: .opacity))
+                                } else {
+                                    ProgressView()
+                                        .tint(Color(hex: 0xCFD5D2))
+                                        .controlSize(.mini)
+                                }
+                            }
+                            .frame(width: 16, height: 16)
+                            Text(reasoning.steps[index])
+                                .font(.system(size: 15))
+                                .foregroundStyle(Color(hex: 0xD8DDDA))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
+                        }
+                        .padding(.vertical, 8)
+                        .transition(.opacity.combined(with: .offset(y: 8)))
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 12)
+                .padding(.bottom, 9)
+                .transition(.opacity)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Theme.surface))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.white.opacity(0.04), lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
+// MARK: - Action row and follow-ups
+
+struct ActionRow: View {
+    @State private var vote = 0
+
+    var body: some View {
+        HStack(spacing: 26) {
+            icon("doc.on.doc") { }
+            icon("speaker.wave.2") { }
+            icon("hand.thumbsup", active: vote == 1) { vote = vote == 1 ? 0 : 1 }
+            icon("hand.thumbsdown", active: vote == -1) { vote = vote == -1 ? 0 : -1 }
+            icon("square.and.arrow.up") { }
+        }
+        .padding(.leading, 2)
+    }
+
+    private func icon(_ name: String, active: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.system(size: 19))
+                .foregroundStyle(active ? Theme.green : Color(hex: 0xD7DBD9))
+                .frame(width: 26, height: 26)
+        }
+        .buttonStyle(PressStyle())
+    }
+}
+
+struct FollowUpChips: View {
+    let items: [FollowUp]
+    let onTap: (FollowUp) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ask a follow-up question")
+                .font(.system(size: 13.5, weight: .medium))
+                .foregroundStyle(Theme.text3)
+                .padding(.leading, 4)
+                .padding(.bottom, 2)
+            ForEach(items) { item in
+                Button { onTap(item) } label: {
+                    HStack(spacing: 10) {
+                        Text(item.label)
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color(hex: 0xE3E7E5))
+                            .multilineTextAlignment(.leading)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.text3)
+                    }
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 18)
+                    .glassCapsule()
+                }
+                .buttonStyle(PressStyle())
+                .transition(.opacity.combined(with: .offset(y: 8)))
+            }
+        }
+        .padding(.top, 4)
+    }
+}
