@@ -325,30 +325,32 @@ struct RoundUpAside: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: "arrow.up.circle")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Theme.lime)
+            JarIcon()
                 .frame(width: 36, height: 36)
                 .background(Circle().fill(Theme.lime.opacity(0.14)))
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Put your spare change in a jar")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.text)
                 copy
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color(hex: 0xDFE4E1))
-                    .lineSpacing(4)
+                    .font(.system(size: 14.5))
+                    .foregroundStyle(Color(hex: 0xC9D0CD))
+                    .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 20) {
                     Button(action: onLearn) {
                         Text("See how it works")
-                            .font(.system(size: 15.5, weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Theme.lime)
                     }
                     Button(action: onDismiss) {
                         Text("Not now")
-                            .font(.system(size: 15.5, weight: .medium))
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Theme.text3)
                     }
                 }
                 .buttonStyle(PressStyle())
+                .padding(.top, 6)
             }
             .padding(.top, 2)
         }
@@ -364,6 +366,30 @@ struct RoundUpAside: View {
         )
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.lime.opacity(0.12), lineWidth: 1))
         .transition(.scale(scale: 0.98).combined(with: .opacity))
+    }
+}
+
+/// SF Symbols has no jar, so this is a small one drawn with shapes: lid, neck, body, two coins.
+struct JarIcon: View {
+    var body: some View {
+        VStack(spacing: 1.5) {
+            Capsule()
+                .fill(Theme.lime)
+                .frame(width: 13, height: 3)
+            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                .fill(Theme.lime.opacity(0.75))
+                .frame(width: 9, height: 2)
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(Theme.lime, lineWidth: 1.6)
+                    .frame(width: 14, height: 12)
+                HStack(spacing: 1.5) {
+                    Circle().fill(Theme.lime).frame(width: 4, height: 4)
+                    Circle().fill(Theme.lime).frame(width: 4, height: 4)
+                }
+                .padding(.bottom, 2.5)
+            }
+        }
     }
 }
 
